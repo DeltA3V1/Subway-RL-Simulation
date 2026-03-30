@@ -32,13 +32,13 @@ function draw() {
 }
 
 async function fetchData() {
-        try {
-            const response = await fetch('https://reimagined-space-disco-9v7xp7p6x45fpgpr-8000.app.github.dev/get_step');
-            const incoming = await response.json();
-            console.log('Data from backend:', incoming);
-            data.x += (data.x + incoming.x >= 0 && data.x + incoming.x < 400) ? incoming.x : 0;
-            data.y += (data.y + incoming.y >= 0 && data.y + incoming.y < 400) ? incoming.y : 0;
-        } catch (error) {
-            console.error('Error:', error);
-        }
+    try {
+        const response = await fetch('https://reimagined-space-disco-9v7xp7p6x45fpgpr-8000.app.github.dev/get_step');
+        const incoming = await response.json();
+        console.log('Data from backend:', incoming);
+        data.x += (data.x + incoming.x >= 0 && data.x + incoming.x < 400) ? incoming.x : 0;
+        data.y += (data.y + incoming.y >= 0 && data.y + incoming.y < 400) ? incoming.y : 0;
+    } catch (error) {
+        console.error('Error:', error);
     }
+}
