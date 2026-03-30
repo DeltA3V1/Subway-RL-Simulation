@@ -21,4 +21,4 @@ async def read_root():
     return {"x": random.choice([-10, 0, 10]), "y": random.choice([-10, 0, 10])}
 
 # To run the server, use the command:
-# uvicorn random-walker.main:app --reload
+# uvicorn 01-random-walker.main:app --reload
