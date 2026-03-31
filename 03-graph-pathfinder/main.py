@@ -25,6 +25,7 @@ def add_station(new_node):
     network["stations"].append(new_node)
 
     for _, s_id in distances[:2]:
+        if s_id == new_node["id"]: continue
         network["edges"].append({"from": new_node["id"], "to": s_id})
 
         adjacency[new_node["id"]].append(s_id)
@@ -46,6 +47,8 @@ class Node:
 
 
 def a_star(start_id, end_id):
+    if start_id == end_id: return [start_id]
+
     start = Node()
     start.x = network["stations"][start_id]["x"]
     start.y = network["stations"][start_id]["y"]
@@ -54,17 +57,17 @@ def a_star(start_id, end_id):
     start.f = start.g + start.h
     start.id = start_id
 
-    path = []
     open_list = [start]
     g_scores = {start_id: 0}
 
     while open_list:
         current = heapq.heappop(open_list)
         if current.id == end_id:
-            while current.parent:
+            path = []
+            while current is not None:
                 path.append(current.id)
                 current = current.parent
-            return path.reverse()
+            return path[::-1]
 
         for neighbor_id in adjacency[current.id]:
             g = math.dist((current.x, current.y), (network["stations"][neighbor_id]["x"], network["stations"][neighbor_id]["y"]))
@@ -81,7 +84,7 @@ def a_star(start_id, end_id):
 
                 g_scores[neighbor_id] = tent_g
                 heapq.heappush(open_list, neighbor)
-    pass
+    return None
 
 app = FastAPI()
 
@@ -103,8 +106,13 @@ async def get_network():
 
 @app.get("/get_shortest_path")
 async def get_shortest_path(from_id: int, to_id: int):
-    # Placeholder for shortest path calculation logic
-    pass
+    num_stations = len(network["stations"])
+    if from_id < 0 or to_id < 0 or from_id >= num_stations or to_id >= num_stations:
+        return {"path": [], "error": "Invalid station IDs"}
+    
+    path_array = a_star(from_id, to_id)
+    if path_array is not None: return {"path": path_array}
+    else: return {"path": []}
 
 @app.post("/add_station")
 async def add_station_endpoint(station: Station):
