@@ -1,16 +1,15 @@
 const GRID      = 20;
-const MAX_PATH  = 80;
-const SPEED     = 8;          // frames between moves
+const SPEED     = 8;  
 const CELL      = 20;
+const MAX_PATH  = 40;
 
 function makeSnake(x, y, dir, color, algorithm) {
   return { x, y, dir, color, path: [], algorithm };
 }
 
 const algorithms = {
-
   random(snake) {
-    const choices = [-90, 0, 0, 90];  // weighted to go straight more often
+    const choices = [-90, 0, 0, 90]; 
     return (snake.dir + random(choices) + 360) % 360;
   },
 
@@ -22,48 +21,50 @@ const algorithms = {
   },
 
   wallHugger(snake) {
-    const margin = 10;
-    const W = width, H = height;
-    if (snake.x <= margin)              return 90;   // left wall  → go down
-    if (snake.y >= H - margin)          return 0;    // bottom     → go right
-    if (snake.x >= W - margin)          return 270;  // right wall → go up
-    if (snake.y <= margin)              return 180;  // top        → go left
-    return snake.dir;  // keep going
+    const maxBound = (GRID - 1) * CELL;
+    if (snake.x <= 0 && snake.dir === 180) return 90;   // At left, go down
+    if (snake.y >= maxBound && snake.dir === 90) return 0;    // At bottom, go right
+    if (snake.x >= maxBound && snake.dir === 0) return 270;  // At right, go up
+    if (snake.y <= 0 && snake.dir === 270) return 180;  // At top, go left
+    return snake.dir;
   },
 
   spiralInward(snake) {
-    if (!snake.segLen)   snake.segLen   = floor(width / 2);
-    if (!snake.stepsTaken) snake.stepsTaken = 0;
+    if (snake.segLen === undefined) snake.segLen = GRID - 1;
+    if (snake.stepsTaken === undefined) snake.stepsTaken = 0;
 
     snake.stepsTaken++;
     if (snake.stepsTaken >= snake.segLen) {
       snake.stepsTaken = 0;
-      snake.segLen = max(10, snake.segLen - 10);
-      return (snake.dir + 90) % 360;   // turn right
+      // Shrink the path every two turns
+      if (snake.dir === 0 || snake.dir === 180) {
+          snake.segLen = max(1, snake.segLen - 1);
+      }
+      return (snake.dir + 90) % 360;
     }
     return snake.dir;
   },
 };
 
-
 let snakes;
 
 function setup() {
-  createCanvas(400, 400);
-  resetSnakes();
+    let cnv = createCanvas(400, 400);
+    cnv.parent('canvas-container');
+    resetSnakes();
 }
 
 function resetSnakes() {
     snakes = [
-        makeSnake(0, 0, 90, color(180,  60, 220), algorithms.random),                                 // top-left
-        makeSnake((GRID-1)*CELL, 0, 180, color( 30, 160, 120), algorithms.biasedWander),              // top-right
-        makeSnake((GRID-1)*CELL, (GRID-1)*CELL, 270, color(220,  80,  40), algorithms.spiralInward),  // bottom-right
-        makeSnake(0, (GRID-1)*CELL, 0, color(200, 140,  20), algorithms.wallHugger),                  // bottom-left
+        makeSnake(0, 0, 0, color(180, 60, 220), algorithms.random),
+        makeSnake((GRID-1)*CELL, 0, 180, color(30, 160, 120), algorithms.biasedWander),
+        makeSnake((GRID-1)*CELL, (GRID-1)*CELL, 270, color(220, 80, 40), algorithms.spiralInward),
+        makeSnake(0, (GRID-1)*CELL, 0, color(200, 140, 20), algorithms.wallHugger),
     ];
 }
 
 function draw() {
-  background(30);
+  background(11, 0, 20);
 
   if (frameCount % SPEED === 0) {
     for (const snake of snakes) moveSnake(snake);
@@ -72,7 +73,6 @@ function draw() {
   for (const snake of snakes) drawSnake(snake);
 }
 
-
 function moveSnake(snake) {
   snake.path.push({ x: snake.x, y: snake.y });
   if (snake.path.length > MAX_PATH) snake.path.shift();
@@ -80,26 +80,27 @@ function moveSnake(snake) {
   snake.dir = snake.algorithm(snake);
 
   const rad = radians(snake.dir);
-  // move one cell
-  snake.x = constrain(snake.x + round(cos(rad)) * CELL, 0, (GRID - 1) * CELL);
-  snake.y = constrain(snake.y + round(sin(rad)) * CELL, 0, (GRID - 1) * CELL);
+  const maxBound = (GRID - 1) * CELL;
+  
+  snake.x = constrain(snake.x + round(cos(rad)) * CELL, 0, maxBound);
+  snake.y = constrain(snake.y + round(sin(rad)) * CELL, 0, maxBound);
 }
 
 function drawSnake(snake) {
-  // trail
   noStroke();
-  for (let i = 1; i < snake.path.length; i++) {
+  // Draw Tail
+  for (let i = 0; i < snake.path.length; i++) {
     const t = i / snake.path.length;
-    fill(red(snake.color), green(snake.color), blue(snake.color), t * 200);
+    let c = color(red(snake.color), green(snake.color), blue(snake.color), t * 255);
+    fill(c);
     rect(snake.path[i].x, snake.path[i].y, CELL, CELL);
   }
 
-  // head
+  // Draw Head
   fill(snake.color);
   rect(snake.x, snake.y, CELL, CELL);
 }
 
-// reset
 function mousePressed() {
   resetSnakes();
 }

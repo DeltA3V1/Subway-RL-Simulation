@@ -3,7 +3,8 @@ let displayText = true;
 let running = true;
 
 function setup() {
-    createCanvas(400, 400);
+    let cnv = createCanvas(400, 400);
+    cnv.parent('canvas-container');
     fetchData();
 }
 
@@ -59,7 +60,7 @@ function keyPressed() {
 
 async function resetHeatmap() {
     try {
-        await fetch('https://reimagined-space-disco-9v7xp7p6x45fpgpr-8000.app.github.dev/reset_heatmap', {
+        await fetch('https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev/reset_heatmap', {
             method: 'POST'
         });
         await fetchData();
@@ -70,7 +71,7 @@ async function resetHeatmap() {
 
 async function fetchData() {
     try {
-        const response = await fetch('https://reimagined-space-disco-9v7xp7p6x45fpgpr-8000.app.github.dev/get_heatmap');
+        const response = await fetch('https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev/get_heatmap');
         const data = await response.json();
         heatmapData = data.heatmap;
         console.log('Heatmap data from backend:', heatmapData);

@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <meta charset="utf-8">
-    <title>Random Walker</title>
+    <meta charset="UTF-8">
+    <title>Graph Pathfinder</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
     <style>
         :root {
@@ -11,6 +11,7 @@
             --card-bg: #F5E9E2;
             --text-color: #166088;
             --accent: #E3B5A4;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
@@ -18,12 +19,19 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
         }
 
         h1 {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             margin-bottom: 2rem;
             color: var(--text-color);
+        }
+
+        p {
+            max-width: 400px;
+            margin-top: 20px;
         }
 
         #canvas-container {
@@ -38,15 +46,28 @@
         canvas {
             display: block;
         }
+
+        button {
+            font-family: 'Inter', Helvetica, sans-serif;
+            font-weight: 400;
+            padding: 4px 8px;
+            margin: 1rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-
-    <h1>Project 1: Random Walker</h1>
+    <h1>Project 3: Graph Pathfinder</h1>
+    <div id="canvas-container"></div>
     
-    <div id="canvas-container">
-    </div>
+    <p>
+    Place stations by clicking. Stations can't be placed too close to each other.
+    </p>
 
-    <script src="./sketch.js" defer></script>
+    <div style="text-align:center; margin: 10px;">
+    <button onclick="resetNetwork()">Reset Network</button>
+    </div>
+    
+    <script src="./pathfinder.js" defer></script>
 </body>
 </html>

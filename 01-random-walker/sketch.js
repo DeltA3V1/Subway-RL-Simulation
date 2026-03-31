@@ -3,7 +3,8 @@ let path = [];
 let maxPathLength = 100;
 
 function setup() {
-    createCanvas(400, 400);
+    let cnv = createCanvas(400, 400);
+    cnv.parent('canvas-container');
 }
 
 function draw() {
@@ -33,7 +34,7 @@ function draw() {
 
 async function fetchData() {
     try {
-        const response = await fetch('https://reimagined-space-disco-9v7xp7p6x45fpgpr-8000.app.github.dev/get_step');
+        const response = await fetch('https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev/get_step');
         const incoming = await response.json();
         console.log('Data from backend:', incoming);
         data.x += (data.x + incoming.x >= 0 && data.x + incoming.x < 400) ? incoming.x : 0;
