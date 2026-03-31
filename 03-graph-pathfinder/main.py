@@ -13,6 +13,8 @@ class Station(BaseModel):
     y: float
 
 def add_station(new_node):
+    new_node["id"] = len(network["stations"])
+
     distances = []
     for s in network["stations"]:
         d = math.dist((new_node["x"], new_node["y"]), (s["x"], s["y"]))
@@ -20,7 +22,6 @@ def add_station(new_node):
         distances.append((d, s["id"]))
 
     distances.sort()
-    new_node["id"] = len(network["stations"])
     adjacency[new_node["id"]] = []
     network["stations"].append(new_node)
 

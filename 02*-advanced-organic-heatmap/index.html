@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Organic Heatmap</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+        :root {
+            --bg-color: #0B0014;
+            --card-bg: #F5E9E2;
+            --text-color: #166088;
+            --accent: #E3B5A4;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+        }
+
+        #canvas-container {
+            background: var(--card-bg);
+            padding: 10px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 
+                        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        button {
+            font-family: 'Inter', Helvetica, sans-serif;
+            font-weight: 400;
+            padding: 4px 8px;
+            margin: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Organic Heatmap with Environment</h1>
+    <div id="canvas-container"></div>
+
+
+    <div style="text-align:center; margin: 10px;">
+    <button onclick="resetMaps()">Reset Maps</button>
+    </div>
+    
+    <script src="./heatmap.js" defer></script>
+</body>
+</html>
