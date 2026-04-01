@@ -2,18 +2,22 @@ const API_BASE_URL = 'https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.de
 const stepsElement = document.getElementById('steps');
 const episodesElement = document.getElementById('episodes');
 const rewardElement = document.getElementById('reward');
-const totalRewardElement = document.getElementById('total-reward');
+const successesElement = document.getElementById('successes');
 
 let pits = [];
-let current_position = [0, 0];
+let current_position = [0, 0]; // row col
 let goal = [4, 4];
+
 let current_episode = 0;
 let steps = 0;
 let reward = 0;
 let total_reward = 0;
+
+let last_success = [0, 0];
+
 let framesPerStep = 60;
 let running = true;
-GRID_SIZE = 5;
+const GRID_SIZE = 5;
 
 
 function setup() {
@@ -61,14 +65,11 @@ function keyPressed() {
     }
 }
 
-async function resetData() {
+async function nextEpisode() {
     try {
-        await fetch(`${API_BASE_URL}/reset_data`, {
+        await fetch(`${API_BASE_URL}/next_episode`, {
             method: 'POST'
         });
-        pits = [];
-        current_position = [0, 0];
-        goal = [4, 4];
         reward = 0;
         total_reward = 0;
         running = true;
@@ -78,42 +79,65 @@ async function resetData() {
     }
 }
 
-
 async function fetchData() {
     try {
         const response = await fetch(`${API_BASE_URL}/get_data`);
         const incoming = await response.json();
-        console.log('Data from backend:', incoming);
         pits = incoming.pits;
-        current_position = incoming.current_position;
+        current_position = [incoming.current_position.row, incoming.current_position.col];
         goal = incoming.goal;
-
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error fetching data:', error);
     }
 }
 
 async function step() {
+    if (!running) return;
+
     try {
         const response = await fetch(`${API_BASE_URL}/step`);
         const data = await response.json();
         
-        current_position = [data.x, data.y];
+        current_position = [data.row, data.col]; 
         reward = data.reward;
         total_reward += reward;
         steps += 1;
 
-        stepsElement.textContent = `Steps: ${steps}`;
-        episodesElement.textContent = `Episodes: ${current_episode}`;
-        rewardElement.textContent = `Last Step Reward: ${reward}`;
-        totalRewardElement.textContent = `Total Reward: ${total_reward.toFixed(1)}`;
+        if (reward == 10) {
+            last_success[0] = current_episode;
+            last_success[1] = steps;
+        }
+
+        updateUI();
 
         if (data.done) {
+            running = false; 
             current_episode++;
-            running = false;
-            setTimeout(resetData, framesPerStep * 10); 
+            setTimeout(nextEpisode, 500); 
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error during step:', error);
+        running = false;
+    }
+}
+
+function updateUI() {
+    stepsElement.textContent = `Steps: ${steps}`;
+    episodesElement.textContent = `Episodes: ${current_episode}`;
+    rewardElement.textContent = `Last Reward: ${reward} (Total: ${total_reward.toFixed(2)})`;
+    successesElement.textContent = `Last Successful Episode: ${last_success[0]} (Steps: ${last_success[1]})`
+}
+
+async function resetData() {
+    try {
+        await fetch(`${API_BASE_URL}/reset_data`, { method: 'POST' });
+        steps = 0;
+        current_episode = 0;
+        total_reward = 0;
+        running = true;
+        await fetchData();
+        updateUI();
+    } catch (error) {
+        console.error('Error resetting:', error);
     }
 }
