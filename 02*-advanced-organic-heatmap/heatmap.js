@@ -1,72 +1,76 @@
 let heatmapData = [];
 let terrainData = [];
-
-
 let displayText = true;
 let running = true;
 let terrainColors;
 
+const API_URL = 'https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev'; 
+
 function setup() {
-    let cnv = createCanvas(400, 400);
+    let cnv = createCanvas(500, 500);
     cnv.parent('canvas-container');
     fetchData();
     textAlign(CENTER, CENTER);
-    textSize(16);
+    textSize(14);
 
     terrainColors = {
-        '-4': color(0, 0, 255), // Deep water
-        '-3': color(0, 100, 255), // Shallow water
-        '-2': color(0, 150, 255), // Shallow water
-        '-1': color(0, 200, 255), // Shallow water
-        '0': color(34, 139, 34), // Land
-        '1': color(85, 107, 47), // Highland
-        '2': color(139, 69, 19) // Mountain
+        '-4': color(20, 50, 150),  // Deep water
+        '-3': color(30, 80, 200),  // Water
+        '-2': color(50, 120, 220), // Shallow water
+        '-1': color(100, 180, 240),// Coastline water
+        '0': color(230, 210, 150), // Sand/Beach
+        '1': color(100, 180, 80),  // Grassland
+        '2': color(60, 130, 50),   // Forest
+        '3': color(120, 100, 80),  // Mountain
+        '4': color(220, 220, 220)  // Snow Peak
     };
 }
 
 function draw() {
-    if (!running) {
+    if (heatmapData.length == 0 || terrainData.length == 0) {
         background(220);
         fill(0);
-        text('Simulation paused. Press Enter to resume.', width / 2, height / 2);
-    }
-
-    if (heatmapData.length == 0) {
-        background(220);
-        fill(0);
-        text('Loading heatmap data...', width / 2, height / 2);
+        text('Loading simulation data...', width / 2, height / 2);
         return;
     }
 
-    if (frameCount % 15 === 0 && running) {
+    if (!running) {
+    } else if (frameCount % 15 === 0) {
         fetchData();
     }
 
     let gridSize = 20;
-    let cellSize = width / gridSize; // Calculate size of each cell
+    let cellSize = width / gridSize;
         
-    background(220);
-    stroke(200);
+    background(0);
 
     for (let x = 0; x < gridSize; x++) {
         for (let y = 0; y < gridSize; y++) {
-            let alpha = map(heatmapData[x][y], 0, 10, 0, 255);
-            fill(255, 0, 0, alpha);
-            if (terrainData[x][y] != 0) {
-                fill(terrainColors[terrainData[x][y].toString()]);
+            let px = x * cellSize;
+            let py = y * cellSize;
+
+            // LAYER 1: Draw Terrain Map
+            let tVal = terrainData[x][y].toString();
+            let tColor = terrainColors[tVal] || color(0);
+            fill(tColor);
+            noStroke();
+            rect(px, py, cellSize, cellSize);
+
+            // LAYER 2: Draw Heatmap Overlay (Semi-transparent red)
+            let hVal = heatmapData[x][y];
+            if (hVal > 0) {
+                let alpha = map(hVal, 0, 10, 0, 200); // Max alpha 200 for visible terrain
+                fill(255, 0, 0, alpha);
+                rect(px, py, cellSize, cellSize);
             }
-            
-            rect(x * cellSize, y * cellSize, cellSize, cellSize);
-            if (displayText) {
-                fill(0);
-                if (terrainData[x][y] != 0) {
-                    continue;
-                }
-                text(heatmapData[x][y], x * cellSize + cellSize / 2, y * cellSize + cellSize / 2);
+
+            // LAYER 3: Draw Text
+            if (displayText && hVal > 0) {
+                fill(255); // White text shows up better on dark heat/terrain
+                text(hVal, px + cellSize / 2, py + cellSize / 2);
             }
         }
     }
-    
 }
 
 function keyPressed() {
@@ -80,9 +84,7 @@ function keyPressed() {
 
 async function resetMaps() {
     try {
-        await fetch('https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev/reset_maps', {
-            method: 'POST'
-        });
+        await fetch(`${API_URL}/reset_maps`, { method: 'POST' });
         await fetchData();
     } catch (error) {
         console.error('Error resetting maps:', error);
@@ -91,11 +93,10 @@ async function resetMaps() {
 
 async function fetchData() {
     try {
-        const response = await fetch('https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev/get_maps');
+        const response = await fetch(`${API_URL}/get_maps`);
         const data = await response.json();
         heatmapData = data.heatmap;
         terrainData = data.terrain;
-        console.log('Heatmap data from backend:', heatmapData);
     } catch (error) {
         console.error('Error fetching data:', error);
     }

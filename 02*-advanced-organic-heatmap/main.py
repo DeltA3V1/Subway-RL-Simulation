@@ -1,52 +1,65 @@
+import random
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import random
+from perlin_noise import PerlinNoise
 
-heatmap = [[0 for _ in range(20)] for _ in range(20)]
-terrain = [[0 for _ in range(20)] for _ in range(20)]
-# terrain: -4 = deep water, -3 to -1 = shallow water, 0 = land, 1 = highland, 2 = mountain
+GRID_SIZE = 20
+
+heatmap = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+terrain = [[1 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+
+def init_terrain():
+    global terrain
+    
+    noise = PerlinNoise(octaves=2.5, seed=random.randint(1, 100000))
+    
+    for x in range(GRID_SIZE):
+        for y in range(GRID_SIZE):
+            # Normalize coordinates
+            nx = x / GRID_SIZE
+            ny = y / GRID_SIZE
+            
+            # This outputs a float roughly between -0.5 and 0.5
+            raw_noise = noise([nx, ny])
+            
+            # Stretch the noise to fit scale.
+            scaled_noise = raw_noise * 8
+            
+            # Round to integers and clamp
+            terrain[x][y] = max(-4, min(4, round(scaled_noise)))
 
 def init_heatmap():
-    for _ in range(5):
-        rand_x, rand_y = random.randint(0, 19), random.randint(0, 19)
-        if terrain[rand_x][rand_y] >= 0:
-            heatmap[rand_x][rand_y] += 1
-    
-def init_terrain():
-    for _ in range(10):
-        rand_x, rand_y = random.randint(0, 19), random.randint(0, 19)
-        terrain[rand_x][rand_y] = random.choice([-4, -3, 1])
-    terrain_count = 10;
-    while terrain_count < 40:
-        if update_map(terrain, "terrain", 2):
-            terrain_count += 1
-        update_map(terrain, "heatmap", 2)
+    global heatmap
+    heatmap = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
+    # Seed 3 random heat sources on land
+    attempts = 0
+    seeds_placed = 0
+    while seeds_placed < 3 and attempts < 100:
+        x, y = random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1)
+        if terrain[x][y] >= 0: # Only start heat on land
+            heatmap[x][y] = 2
+            seeds_placed += 1
+        attempts += 1
 
-def update_map(data, map_type, max_value=3):
-    rand_x, rand_y = random.randint(0, 19), random.randint(0, 19)
-    if map_type == "heatmap" and terrain[rand_x][rand_y] < 0:
-        return False
-    
-    if data[rand_x][rand_y] < max_value:
-        neighbor = None
+def update_heatmap():
+    # Find all land coordinates
+    land_spots = [(x, y) for x in range(GRID_SIZE) for y in range(GRID_SIZE) if terrain[x][y] >= 0]
+    if not land_spots: return
+
+    for _ in range(3): # 3 updates per call
+        rx, ry = random.choice(land_spots)
         
+        is_near_heat = False
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
-                nx, ny = rand_x + dx, rand_y + dy
-                
-                if 0 <= nx < 20 and 0 <= ny < 20:
-                    if data[nx][ny] > 0:
-                        neighbor = (nx, ny)
-                        break
-            if neighbor: break
-            
-        if neighbor:
-            if map_type == "heatmap":
-                data[rand_x][rand_y] += 1
-            elif map_type == "terrain":
-                data[rand_x][rand_y] = data[neighbor[0]][neighbor[1]]
-            return True
-    return False
+                nx, ny = rx + dx, ry + dy
+                if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE and heatmap[nx][ny] > 0:
+                    is_near_heat = True
+                    break
+        
+        if is_near_heat or random.random() < 0.05:
+            heatmap[rx][ry] = min(10, heatmap[rx][ry] + 1)
+
 
 init_terrain()
 init_heatmap()
@@ -55,30 +68,19 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows all origins. Good for testing, change in production!
+    allow_origins=["*"], 
     allow_credentials=False,
-    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"], 
+    allow_headers=["*"], 
 )
-
-@app.get("/")
-async def read_root():
-    return {"Hello": "World"}
 
 @app.get("/get_maps")
 async def read_maps():
-    update_map(heatmap, "heatmap")
-    update_map(heatmap, "heatmap")
+    update_heatmap()
     return {"heatmap": heatmap, "terrain": terrain}
 
 @app.post("/reset_maps")
 async def reset_maps():
-    global heatmap, terrain
-    heatmap = [[0 for _ in range(20)] for _ in range(20)]
-    terrain = [[0 for _ in range(20)] for _ in range(20)]
     init_terrain()
     init_heatmap()
     return {"status": "ok"}
-
-# To run the server, use the command:
-# uvicorn 02*-advanced-organic-heatmap.main:app --reload
