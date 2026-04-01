@@ -6,22 +6,20 @@ function setup() {
     let cnv = createCanvas(400, 400);
     cnv.parent('canvas-container');
     fetchData();
+    textAlign(CENTER, CENTER);
+    textSize(14);
 }
 
 function draw() {
     if (!running) {
-        textAlign(CENTER, CENTER);
         background(220);
         fill(0);
-        textSize(16);
         text('Simulation paused. Press Enter to resume.', width / 2, height / 2);
     }
     
     if (heatmapData.length == 0) {
         background(220);
         fill(0);
-        textSize(16);
-        textAlign(CENTER, CENTER);
         text('Loading heatmap data...', width / 2, height / 2);
         return;
     }
@@ -30,14 +28,13 @@ function draw() {
         fetchData();
     }
 
-    textAlign(CENTER, CENTER);
     background(220);
-    let gridSize = 20;
-    let cellSize = width / gridSize; // Calculate size of each cell
+    const GRID_SIZE = 20;
+    let cellSize = width / GRID_SIZE; // Calculate size of each cell
 
     stroke(200);
-    for (let x = 0; x < gridSize; x++) {
-        for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+        for (let y = 0; y < GRID_SIZE; y++) {
             let alpha = map(heatmapData[x][y], 0, 10, 0, 255);
             fill(255, 0, 0, alpha);
             rect(x * cellSize, y * cellSize, cellSize, cellSize);

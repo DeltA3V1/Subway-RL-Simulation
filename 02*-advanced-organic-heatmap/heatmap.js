@@ -66,7 +66,7 @@ function draw() {
 
             // LAYER 3: Draw Text
             if (displayText && hVal > 0) {
-                fill(255); // White text shows up better on dark heat/terrain
+                fill(255);
                 text(hVal, px + cellSize / 2, py + cellSize / 2);
             }
         }
