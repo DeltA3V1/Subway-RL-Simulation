@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Gridworld Navigator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+        :root {
+            --bg-color: #0B0014;
+            --card-bg: #F5E9E2;
+            --text-color: #166088;
+            --accent: #E3B5A4;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            color: var(--text-color);
+        }
+
+        p {
+            max-width: 400px;
+            margin: auto;
+        }
+
+        #canvas-container {
+            background: var(--card-bg);
+            padding: 10px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 
+                        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        button {
+            font-family: 'Inter', Helvetica, sans-serif;
+            font-weight: 400;
+            padding: 4px 8px;
+            margin: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Project 4: Gridworld Navigator</h1>
+    <div id="canvas-container"></div>
+    
+    <p>
+        Simple reinforcement learning agent
+    </p>
+    <p id = "steps">Steps: 0</p>
+    <p id = "episodes">Episodes: 0</p>
+    <p id = "reward">Last Step Reward: 0</p>
+    <p id = "total-reward">Total Reward: 0</p>
+
+    <div style="text-align:center; margin: 10px;">
+    <button onclick="resetData()">Reset Data</button>
+    </div>
+    
+    <script src="./gridworld.js" defer></script>
+</body>
+</html>

@@ -129,6 +129,8 @@ async function fetchShortestPath(fromId, toId) {
         const data = await response.json();
         console.log('Shortest path:', data.path);
         currentPath = data.path;
+        trainIndex = 0;
+        trainProgress = 0.0;
     } catch (error) {
         console.error('Error fetching shortest path:', error);
     }

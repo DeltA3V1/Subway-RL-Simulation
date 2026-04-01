@@ -13,6 +13,7 @@ class Station(BaseModel):
     y: float
 
 def add_station(new_node):
+    global network, adjacency
     new_node["id"] = len(network["stations"])
 
     distances = []
@@ -48,6 +49,7 @@ class Node:
 
 
 def a_star(start_id, end_id):
+    global network, adjacency
     if start_id == end_id: return [start_id]
 
     start = Node()
