@@ -3,6 +3,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from perlin_noise import PerlinNoise
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import sim
+
+world = sim.WorldState()
 
 app = FastAPI()
 
@@ -16,7 +22,7 @@ app.add_middleware(
 
 @app.get("/init")
 async def read_maps():
-    return {"status": "ok"}
+    return {"heatmap": world.heatmap, "terrain": world.terrain, "cand_pos": world.get_candidate_stations()}
 
 @app.get("/step_generation")
 async def step_generation():
@@ -25,4 +31,10 @@ async def step_generation():
 @app.post("/event")
 async def event():
     pass
+    return {"status": "ok"}
+
+@app.post("/reset")
+async def reset():
+    global world
+    world = sim.WorldState()
     return {"status": "ok"}
