@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>Subway RL Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+        :root {
+            --bg-color: #F8FAFC;      /* Clean Light Gray */
+            --card-bg: #FFFFFF;       /* Pure White */
+            --text-color: #1E293B;    /* Deep Slate */
+            --text-muted: #64748B;    /* Muted Blue-Gray */
+            --accent: #4F46E5;        /* Indigo */
+            --border: #E2E8F0;        /* Soft Border */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+
+        #canvas-container {
+            background: var(--card-bg);
+            padding: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #hud-container {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            color: var(--accent);
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        #bottom-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-top: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: var(--text-color);
+            font-size: 1.1rem;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        button {
+            font-family: inherit;
+            font-weight: 600;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Subway RL Simulation</h1>
+    
+    <div id="canvas-container"></div>
+
+    <div id="hud-container">
+        <div class="stat-box">
+            <span>EPISODE</span>
+            <span class="stat-value" id="stat-episode">0</span>
+        </div>
+        <div class="stat-box">
+            <span>REWARD</span>
+            <span class="stat-value" id="stat-reward">0.00</span>
+        </div>
+        <div class="stat-box">
+            <span>EPSILON</span>
+            <span class="stat-value" id="stat-epsilon">1.00</span>
+        </div>
+    </div>
+
+    <div id="bottom-panel">
+        <h3>Controls & Parameters</h3>
+        <p>Adjust reinforcement learning variables and simulation speed.</p>
+        <button onclick="resetSimulation()">Reset Simulation</button>
+    </div>
+    
+    <script src="./heatmap.js" defer></script>
+</body>
+</html>
