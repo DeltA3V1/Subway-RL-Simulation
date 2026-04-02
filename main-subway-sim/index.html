@@ -119,22 +119,24 @@
 
     <div id="hud-container">
         <div class="stat-box">
-            <span>EPISODE</span>
-            <span class="stat-value" id="stat-episode">0</span>
+            <span>GENERATION</span>
+            <span class="stat-value" id="stat-generation">0</span>
         </div>
         <div class="stat-box">
             <span>REWARD</span>
             <span class="stat-value" id="stat-reward">0.00</span>
         </div>
         <div class="stat-box">
-            <span>EPSILON</span>
-            <span class="stat-value" id="stat-epsilon">1.00</span>
+            <span>CURRENTLY ACTIVE</span>
+            <span class="stat-value" id="stat-active">Population</span>
         </div>
     </div>
 
     <div id="bottom-panel">
         <h3>Controls & Parameters</h3>
         <p>Adjust reinforcement learning variables and simulation speed.</p>
+        <button onclick="growPopulation()">Toggle Population Growth</button>
+        <button onclick="toggleSpeed()">Toggle Growth Speed</button>
         <button onclick="resetSimulation()">Reset Simulation</button>
     </div>
     

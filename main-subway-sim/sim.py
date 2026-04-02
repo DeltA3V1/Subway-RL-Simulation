@@ -3,10 +3,11 @@ import random
 import heapq
 from itertools import chain
 
-GRID_SIZE = 50
+GRID_SIZE = 30
 LOW_BOUND = -1
 HIGH_BOUND = 2
 SEEDS = 3
+MAX_POP = 10
 
 class WorldState:
     def __init__(self):
@@ -14,6 +15,8 @@ class WorldState:
         self.heatmap = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
         self.init_terrain()
         self.init_heatmap()
+        self.land_spots = [(x, y) for x in range(GRID_SIZE) for y in range(GRID_SIZE) if self.terrain[x][y] >= LOW_BOUND and self.terrain[x][y] <= HIGH_BOUND]
+
 
     def reset_heatmap(self):
         self.heatmap = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
@@ -52,6 +55,21 @@ class WorldState:
 
                 # Round to integers and clamp
                 self.terrain[x][y] = max(-4, min(4, round(scaled_noise)))
+
+    def expand_heatmap(self, i):
+        for _ in range(i):
+            rx, ry = random.choice(self.land_spots)
+            
+            is_near_heat = False
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    nx, ny = rx + dx, ry + dy
+                    if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE and self.heatmap[nx][ny] > 0:
+                        is_near_heat = True
+                        break
+            
+            if is_near_heat or random.random() < 0.05:
+                self.heatmap[rx][ry] = min(MAX_POP, self.heatmap[rx][ry] + 1)
     
     def get_candidate_stations(self, num_candidates=20):
         land_cells = [
@@ -63,7 +81,7 @@ class WorldState:
         
         cand = heapq.nlargest(num_candidates, land_cells, key=lambda x: x[0])
         
-        return [{"x": r, "y": c, "pop": val} for val, r, c in cand]
+        return [{"x": c, "y": r, "pop": val} for val, r, c in cand]
     
     def sum_in_radius(self, center_row, center_col, radius):
         total_sum = 0
@@ -78,3 +96,6 @@ class WorldState:
                     total_sum += self.heatmap[r][c]
                     
         return total_sum
+    
+    def get_total_population(self):
+        return sum(sum(row) for row in self.heatmap)
