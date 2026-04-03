@@ -3,12 +3,22 @@ import copy
 import math
 import heapq
 
+GRID_SIZE = 30
 COVERAGE_RADIUS = 3
-REWARD_CONFIG = {"coverage": 1.5, "track_cost": -0.5, "isolation_penalty": -20.0}
+REWARD_CONFIG = {"coverage": 1.5, "track_cost": -1, "isolation_penalty": -25, "connectivity_bonus": 1}
+MAX_EDGE_LENGTH = 100
+MUTATION_RATE = 0.1
+GROWTH_RATE = 0.1
+DECAY_RATE = 0.05
 
 action_templates = [
     lambda: {"type": "BUILD", "cand_index": random.randint(0, 19)},
     lambda: {"type": "CONNECT", "station_A_index": random.randint(0, 19), "station_B_index": random.randint(0, 19)}
+]
+
+line_based_dna = [
+    [1, 3, 5, 7],
+    [2, 4, 6, 8]
 ]
 
 class Agent:
@@ -49,37 +59,69 @@ class Agent:
                 
                 # exist check
                 if idx_a in network["built_indices"] and idx_b in network["built_indices"]:
+                    # disabled for now
+                    # if math.dist((candidates[idx_a]["row"], candidates[idx_a]["col"]), (candidates[idx_b]["row"], candidates[idx_b]["col"])) > MAX_EDGE_LENGTH:
+                    #    continue # too far, skip
                     # connect
                     network["edges"].append({"from": cand_to_local_map[idx_a], "to": cand_to_local_map[idx_b]})
 
         return network
     
     def mutate(self):
-        new_dna = copy.deepcopy(self.dna)
-        mutation_rate = 0.1
-        growth_rate = 0.02
+        new_dna = [action for action in self.dna if random.random() > DECAY_RATE]
         
         for i in range(len(new_dna)):
-            if random.random() < mutation_rate:
+            if random.random() < MUTATION_RATE:
                 # new random action
                 new_dna[i] = random.choice(action_templates)()
 
-        if random.random() < growth_rate:
+        if random.random() < GROWTH_RATE:
             new_dna.append(random.choice(action_templates)())
         
         return Agent(dna=new_dna)
+    
+    def score(self, network, world):
+        score = 0.0
+        covered_cells = set()
+        
+        connected_indices = {edge["from"] for edge in network["edges"]} | \
+                            {edge["to"] for edge in network["edges"]}
+
+        for i, node in enumerate(network["nodes"]):
+            if i not in connected_indices:
+                score += REWARD_CONFIG["isolation_penalty"] # Penalty for being isolated
+            else:
+                score += REWARD_CONFIG["connectivity_bonus"] # Bonus for being connected
+
+            center_row, center_col = node["row"], node["col"]
+            radius = COVERAGE_RADIUS
+                
+            for r in range(max(0, center_row - radius), min(GRID_SIZE, center_row + radius + 1)):
+                for c in range(max(0, center_col - radius), min(GRID_SIZE, center_col + radius + 1)):
+                    if (r - center_row)**2 + (c - center_col)**2 <= radius**2:
+                        if (r, c) not in covered_cells:
+                            score += world.heatmap[r][c] * REWARD_CONFIG["coverage"]
+                            covered_cells.add((r, c))
+
+        # Apply the global track cost for each edge built
+        score += len(network["edges"]) * REWARD_CONFIG["track_cost"]
+
+        return score
+
 
 class EvolutionLoop:
     def __init__(self):
         self.population = [Agent() for _ in range(20)]
+        self.generation = 0
 
-    def run_generation(self, agents, world):
+    def run_generation(self, world):
+        self.generation += 1
         candidates = world.get_candidate_stations()
         scored_agents = []
 
-        for idx, agent in enumerate(agents):
+        for idx, agent in enumerate(self.population):
             network = agent.build_network(candidates)
-            score = score_network(network, world)
+            score = agent.score(network, world)
             scored_agents.append((score, idx, agent))
 
         scored_agents.sort(key=lambda x: x[0], reverse=True)
@@ -95,27 +137,3 @@ class EvolutionLoop:
         return new_generation, scored_agents[0][0] # new generation, best score
 
 
-# add in the future: stations close to each other do not count pop twice
-def score_network(network, world):
-    score = 0.0
-    
-    # Coverage Reward
-    for node in network["nodes"]:
-        score += (world.sum_in_radius(node["y"], node["x"], COVERAGE_RADIUS) * REWARD_CONFIG["coverage"])
-        
-    # Track Penalty
-    connected_indices = set()
-    for edge in network["edges"]:
-        connected_indices.add(edge["from"])
-        connected_indices.add(edge["to"])
-
-    # Coverage Reward
-    for i, node in enumerate(network["nodes"]):
-        if i in connected_indices:
-            score += (world.sum_in_radius(node["y"], node["x"], COVERAGE_RADIUS) * REWARD_CONFIG["coverage"])
-        else:
-            # Isolation Penalty
-            score += REWARD_CONFIG["isolation_penalty"]
-
-                        
-    return score

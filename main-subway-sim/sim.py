@@ -2,12 +2,14 @@ from perlin_noise import PerlinNoise
 import random
 import heapq
 from itertools import chain
+import math
 
 GRID_SIZE = 30
 LOW_BOUND = -1
 HIGH_BOUND = 2
 SEEDS = 3
 MAX_POP = 10
+NEW_HEAT_PROB = 0.01
 
 class WorldState:
     def __init__(self):
@@ -15,7 +17,7 @@ class WorldState:
         self.heatmap = [[0 for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
         self.init_terrain()
         self.init_heatmap()
-        self.land_spots = [(x, y) for x in range(GRID_SIZE) for y in range(GRID_SIZE) if self.terrain[x][y] >= LOW_BOUND and self.terrain[x][y] <= HIGH_BOUND]
+        self.land_spots = [(row, col) for row in range(GRID_SIZE) for col in range(GRID_SIZE) if self.terrain[row][col] >= LOW_BOUND and self.terrain[row][col] <= HIGH_BOUND]
 
 
     def reset_heatmap(self):
@@ -26,52 +28,53 @@ class WorldState:
         attempts = 0
         seeds_placed = 0
         while seeds_placed < SEEDS and attempts < 100:
-            x, y = random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1)
-            if self.terrain[x][y] >= LOW_BOUND and self.terrain[x][y] <= HIGH_BOUND:
-                self.heatmap[x][y] = 2
+            row, col = random.randint(0, GRID_SIZE-1), random.randint(0, GRID_SIZE-1)
+            if self.terrain[row][col] >= LOW_BOUND and self.terrain[row][col] <= HIGH_BOUND:
+                self.heatmap[row][col] = 2
                 seeds_placed += 1
             attempts += 1
 
     def init_terrain(self):
         noise = PerlinNoise(octaves=3, seed=random.randint(1, 100000))
         
-        for x in range(GRID_SIZE):
-            for y in range(GRID_SIZE):
+        for row in range(GRID_SIZE):
+            for col in range(GRID_SIZE):
                 # Normalize coordinates
-                nx = x / GRID_SIZE
-                ny = y / GRID_SIZE
+                nx = row / GRID_SIZE
+                ny = col / GRID_SIZE
                 
                 # This outputs a float roughly between -0.5 and 0.5
                 raw_noise = noise([nx, ny])
                 
                 # Stretch the noise to fit scale
                 val = raw_noise * 8
-                if val < -1.2:
-                    scaled_noise = round(val) # Deep water
-                elif val < -0.8:
-                    scaled_noise = -1         # Sand
+
+                if -1.7 <= val and val <= -1.3:
+                    scaled_noise = math.floor(val)
+                elif -0.7 <= val and val <= -0.3:
+                    scaled_noise = math.ceil(val)
                 else:
                     scaled_noise = round(val) # Land       
 
                 # Round to integers and clamp
-                self.terrain[x][y] = max(-4, min(4, round(scaled_noise)))
+                self.terrain[row][col] = max(-4, min(4, round(scaled_noise)))
 
     def expand_heatmap(self, i):
         for _ in range(i):
-            rx, ry = random.choice(self.land_spots)
+            row, col = random.choice(self.land_spots)
             
             is_near_heat = False
             for dx in [-1, 0, 1]:
                 for dy in [-1, 0, 1]:
-                    nx, ny = rx + dx, ry + dy
+                    nx, ny = row + dx, col + dy
                     if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE and self.heatmap[nx][ny] > 0:
                         is_near_heat = True
                         break
             
-            if is_near_heat or random.random() < 0.05:
-                self.heatmap[rx][ry] = min(MAX_POP, self.heatmap[rx][ry] + 1)
+            if is_near_heat or random.random() < NEW_HEAT_PROB:
+                self.heatmap[row][col] = min(MAX_POP, self.heatmap[row][col] + 1)
     
-    def get_candidate_stations(self, num_candidates=20):
+    def get_candidate_stations(self, num_candidates=30):
         land_cells = [
             (val, r, c) 
             for r, row in enumerate(self.heatmap) 
@@ -81,7 +84,7 @@ class WorldState:
         
         cand = heapq.nlargest(num_candidates, land_cells, key=lambda x: x[0])
         
-        return [{"x": c, "y": r, "pop": val} for val, r, c in cand]
+        return [{"row": r, "col": c, "pop": val} for val, r, c in cand]
     
     def sum_in_radius(self, center_row, center_col, radius):
         total_sum = 0
@@ -97,5 +100,3 @@ class WorldState:
                     
         return total_sum
     
-    def get_total_population(self):
-        return sum(sum(row) for row in self.heatmap)

@@ -41,12 +41,12 @@ async def step():
 @app.get("/step_generation")
 async def step_generation():
     # mutate best three
-    new_agents, best_score = evolution.run_generation(evolution.population, world)
+    new_agents, best_score = evolution.run_generation(world)
     # set new population
     evolution.population = new_agents
     # send best network
     best_network = new_agents[0].build_network(world.get_candidate_stations())
-    return {"best_network": best_network, "score": best_score}
+    return {"best_network": best_network, "score": best_score, "generation": evolution.generation}
 
 @app.post("/event")
 async def event():

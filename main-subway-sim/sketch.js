@@ -17,7 +17,7 @@ function setup() {
     cnv.parent('canvas-container');
     fetchAndInit();
     textAlign(CENTER, CENTER);
-    textSize(10);
+    textSize(12);
 
     terrainColors = {
         '-4': color(20, 50, 150),  // Deep water
@@ -49,29 +49,29 @@ function draw() {
         
     background(0);
 
-    for (let x = 0; x < GRID_SIZE; x++) {
-        for (let y = 0; y < GRID_SIZE; y++) {
-            let px = x * cellSize;
-            let py = y * cellSize;
+    for (let col = 0; col < GRID_SIZE; col++) {
+        for (let row = 0; row < GRID_SIZE; row++) {
+            let px = col * cellSize;
+            let py = row * cellSize;
 
-            drawTerrain(x, y, px, py, cellSize)
-            drawHeatmap(x, y, px, py, cellSize)
-            drawNetwork(stations, edges, cellSize)
-            drawHeatmapText(x, y, px, py, cellSize)
+            drawTerrain(col, row, px, py, cellSize)
+            drawHeatmap(col, row, px, py, cellSize)
+            drawHeatmapText(col, row, px, py, cellSize)
         }
     }
+    drawNetwork(stations, edges, cellSize)
 }
 
-function drawTerrain(x, y, px, py, cellSize) {
-    let tVal = terrainData[y][x].toString();
+function drawTerrain(col, row, px, py, cellSize) {
+    let tVal = terrainData[row][col].toString();
     let tColor = terrainColors[tVal] || color(0);
     fill(tColor);
     noStroke();
     rect(px, py, cellSize, cellSize);
 }
 
-function drawHeatmap(x, y, px, py, cellSize) {
-    let hVal = heatmapData[y][x];
+function drawHeatmap(col, row, px, py, cellSize) {
+    let hVal = heatmapData[row][col];
     if (hVal > 0) {
         let alpha = map(hVal, 0, 10, 0, 200); // Max alpha 200 for visible terrain
         fill(255, 0, 0, alpha);
@@ -80,19 +80,23 @@ function drawHeatmap(x, y, px, py, cellSize) {
 }
 
 function drawNetwork(stations, edges, cellSize) {
-    stroke(255);
-    strokeWeight(2);
 
     if (edges && stations) {
         for (let i = 0; i < edges.length; i++) {
             let fromNode = stations[edges[i].from];
             let toNode = stations[edges[i].to];
             
-            let fx = fromNode.x * cellSize + (cellSize / 2);
-            let fy = fromNode.y * cellSize + (cellSize / 2);
-            let tx = toNode.x * cellSize + (cellSize / 2);
-            let ty = toNode.y * cellSize + (cellSize / 2);
-            
+            let fx = fromNode.col * cellSize + (cellSize / 2);
+            let fy = fromNode.row * cellSize + (cellSize / 2);
+            let tx = toNode.col * cellSize + (cellSize / 2);
+            let ty = toNode.row * cellSize + (cellSize / 2);
+
+            stroke("#333333");
+            strokeWeight(5);
+            line(fx, fy, tx, ty);
+
+            stroke("#FFA500");
+            strokeWeight(1);
             line(fx, fy, tx, ty);
         }
     }
@@ -101,9 +105,17 @@ function drawNetwork(stations, edges, cellSize) {
     stroke(0, 0, 0, 100);
     noFill();
     if (stations) {
+        stroke(0);
+        strokeWeight(2);
+        noFill();
+        rectMode(CENTER)
         for (let i = 0; i < stations.length; i++) {
-            rect(stations[i].x * cellSize, stations[i].y * cellSize, cellSize, cellSize);
+            let sx = stations[i].col * cellSize + cellSize/2;
+            let sy = stations[i].row * cellSize + cellSize/2;
+            ;
+            rect(sx, sy, cellSize * 0.9, cellSize * 0.9, 3);
         }
+        rectMode(CORNER);
     }
 }
 
@@ -111,9 +123,9 @@ function drawNetwork(stations, edges, cellSize) {
 
 // }
 
-function drawHeatmapText(x, y, px, py, cellSize) {
+function drawHeatmapText(col, row, px, py, cellSize) {
     strokeWeight(0);
-    let hVal = heatmapData[y][x];
+    let hVal = heatmapData[row][col];
     if (displayText && hVal > 0) {
         fill(255);
         text(hVal, px + cellSize / 2, py + cellSize / 2);
@@ -160,6 +172,7 @@ async function runEvolutionStep() {
         edges = data.best_network.edges;
         
         document.getElementById('stat-reward').innerText = data.score.toFixed(2);
+        document.getElementById('stat-generation').innerText = data.generation;
         
     } catch (error) {
         console.error('Error fetching generation:', error);
@@ -181,6 +194,7 @@ async function fetchAndInit() {
         const data = await response.json();
         heatmapData = data.heatmap;
         terrainData = data.terrain;
+        running = true;
     } catch (error) {
         console.error('Error fetching data:', error);
     }
