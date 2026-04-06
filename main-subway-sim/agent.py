@@ -5,18 +5,14 @@ import heapq
 
 GRID_SIZE = 30
 COVERAGE_RADIUS = 3
-REWARD_CONFIG = {"coverage": 1.5, "track_cost": -1, "isolation_penalty": -25, "connectivity_bonus": 1}
+REWARD_CONFIG = {"coverage": 1, "track_cost": -0.5, "isolation_penalty": -5, "connectivity_bonus": 3, "station_cost": -15}
 MAX_EDGE_LENGTH = 100
 MUTATION_RATE = 0.1
 GROWTH_RATE = 0.1
 DECAY_RATE = 0.05
 
-action_templates = [
-    lambda: {"type": "BUILD", "cand_index": random.randint(0, 19)},
-    lambda: {"type": "CONNECT", "station_A_index": random.randint(0, 19), "station_B_index": random.randint(0, 19)}
-]
 
-line_based_dna = [
+line_dna = [
     [1, 3, 5, 7],
     [2, 4, 6, 8]
 ]
@@ -26,8 +22,19 @@ class Agent:
         if dna:
             self.dna = copy.deepcopy(dna)
         else:
-            self.dna = [random.choice(action_templates)() for _ in range(10)]
+            self.dna = [self.get_random_action() for _ in range(10)]
 
+
+    def get_random_action(self, num_candidates=30):
+        if random.random() < 0.5:
+            return {"type": "BUILD", "cand_index": random.randint(0, num_candidates - 1)}
+        else:
+            return {
+                "type": "CONNECT", 
+                "station_A_index": random.randint(0, num_candidates - 1), 
+                "station_B_index": random.randint(0, num_candidates - 1)
+            }
+    
     def choose_random(self):
         return random.choice(self.dna)
     
@@ -73,10 +80,10 @@ class Agent:
         for i in range(len(new_dna)):
             if random.random() < MUTATION_RATE:
                 # new random action
-                new_dna[i] = random.choice(action_templates)()
+                new_dna[i] = self.get_random_action()
 
         if random.random() < GROWTH_RATE:
-            new_dna.append(random.choice(action_templates)())
+            new_dna.append(self.get_random_action())
         
         return Agent(dna=new_dna)
     
@@ -88,10 +95,12 @@ class Agent:
                             {edge["to"] for edge in network["edges"]}
 
         for i, node in enumerate(network["nodes"]):
+            score += REWARD_CONFIG["station_cost"] # Penalty for each station built
             if i not in connected_indices:
                 score += REWARD_CONFIG["isolation_penalty"] # Penalty for being isolated
             else:
-                score += REWARD_CONFIG["connectivity_bonus"] # Bonus for being connected
+                degree = sum(1 for e in network["edges"] if e["from"] == i or e["to"] == i)
+                score += degree * REWARD_CONFIG["connectivity_bonus"] # Bonus for connectivity
 
             center_row, center_col = node["row"], node["col"]
             radius = COVERAGE_RADIUS
@@ -104,7 +113,11 @@ class Agent:
                             covered_cells.add((r, c))
 
         # Apply the global track cost for each edge built
-        score += len(network["edges"]) * REWARD_CONFIG["track_cost"]
+        for edge in network["edges"]:
+            a = network["nodes"][edge["from"]]
+            b = network["nodes"][edge["to"]]
+            dist = math.dist((a["row"], a["col"]), (b["row"], b["col"]))
+            score += dist * REWARD_CONFIG["track_cost"]
 
         return score
 

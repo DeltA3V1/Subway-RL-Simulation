@@ -9,7 +9,7 @@ LOW_BOUND = -1
 HIGH_BOUND = 2
 SEEDS = 3
 MAX_POP = 10
-NEW_HEAT_PROB = 0.01
+NEW_HEAT_PROB = 0.005
 
 class WorldState:
     def __init__(self):

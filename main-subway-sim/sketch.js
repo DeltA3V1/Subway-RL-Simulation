@@ -54,15 +54,15 @@ function draw() {
             let px = col * cellSize;
             let py = row * cellSize;
 
-            drawTerrain(col, row, px, py, cellSize)
-            drawHeatmap(col, row, px, py, cellSize)
-            drawHeatmapText(col, row, px, py, cellSize)
+            drawTerrain(row, col, px, py, cellSize)
+            drawHeatmap(row, col, px, py, cellSize)
+            drawHeatmapText(row, col, px, py, cellSize)
         }
     }
     drawNetwork(stations, edges, cellSize)
 }
 
-function drawTerrain(col, row, px, py, cellSize) {
+function drawTerrain(row, col, px, py, cellSize) {
     let tVal = terrainData[row][col].toString();
     let tColor = terrainColors[tVal] || color(0);
     fill(tColor);
@@ -70,52 +70,47 @@ function drawTerrain(col, row, px, py, cellSize) {
     rect(px, py, cellSize, cellSize);
 }
 
-function drawHeatmap(col, row, px, py, cellSize) {
+function drawHeatmap(row, col, px, py, cellSize) {
     let hVal = heatmapData[row][col];
     if (hVal > 0) {
-        let alpha = map(hVal, 0, 10, 0, 200); // Max alpha 200 for visible terrain
-        fill(255, 0, 0, alpha);
+        let brightness = map(hVal, 0, 10, 100, 255); 
+        let alpha = map(hVal, 0, 10, 50, 180);
+        fill(255, 255, 200, alpha);
         rect(px, py, cellSize, cellSize);
     }
 }
 
 function drawNetwork(stations, edges, cellSize) {
-
-    if (edges && stations) {
-        for (let i = 0; i < edges.length; i++) {
-            let fromNode = stations[edges[i].from];
-            let toNode = stations[edges[i].to];
-            
-            let fx = fromNode.col * cellSize + (cellSize / 2);
-            let fy = fromNode.row * cellSize + (cellSize / 2);
-            let tx = toNode.col * cellSize + (cellSize / 2);
-            let ty = toNode.row * cellSize + (cellSize / 2);
-
-            stroke("#333333");
-            strokeWeight(5);
-            line(fx, fy, tx, ty);
-
-            stroke("#FFA500");
-            strokeWeight(1);
-            line(fx, fy, tx, ty);
-        }
+    if (!edges || !stations) {
+        return;
     }
 
-    strokeWeight(2);
-    stroke(0, 0, 0, 100);
-    noFill();
-    if (stations) {
+    for (let edge of edges) {
+        let fromNode = stations[edge.from];
+        let toNode = stations[edge.to];
+        
+        let p1 = cellToPixel(fromNode.row, fromNode.col);
+        let p2 = cellToPixel(toNode.row, toNode.col);
+
         stroke(0);
+        strokeWeight(5);
+        line(p1.x, p1.y, p2.x, p2.y);
+
+        stroke("#00F0FF"); // Electric cyan
+        strokeWeight(3);
+        line(p1.x, p1.y, p2.x, p2.y);
+    }
+
+    noStroke();
+    for (let station of stations) {
+        let p = cellToPixel(station.row, station.col);
+        
+        let radius = 10 + (station.pop * 2); 
+        
+        stroke(0); // Black outline
         strokeWeight(2);
-        noFill();
-        rectMode(CENTER)
-        for (let i = 0; i < stations.length; i++) {
-            let sx = stations[i].col * cellSize + cellSize/2;
-            let sy = stations[i].row * cellSize + cellSize/2;
-            ;
-            rect(sx, sy, cellSize * 0.9, cellSize * 0.9, 3);
-        }
-        rectMode(CORNER);
+        fill("#00b3ff"); // Magenta/Pink
+        circle(p.x, p.y, radius);
     }
 }
 
@@ -123,7 +118,7 @@ function drawNetwork(stations, edges, cellSize) {
 
 // }
 
-function drawHeatmapText(col, row, px, py, cellSize) {
+function drawHeatmapText(row, col, px, py, cellSize) {
     strokeWeight(0);
     let hVal = heatmapData[row][col];
     if (displayText && hVal > 0) {
@@ -150,6 +145,16 @@ function growPopulation() {
 function toggleSpeed() {
     framesPerStep = framesPerStep === 15 ? 3 : 15;
 }
+
+function cellToPixel(row, col) {
+    let cellSize = width / GRID_SIZE;
+    return {
+        x: col * cellSize + (cellSize / 2),
+        y: row * cellSize + (cellSize / 2)
+    };
+}
+
+
 
 async function step() {
     try {
