@@ -45,7 +45,7 @@ async def step_generation():
     # set new population
     evolution.population = new_agents
     # send best network
-    best_network = new_agents[0].build_network(world.get_candidate_stations())
+    best_network = new_agents[0].return_network(world.get_candidate_stations())
     return {"best_network": best_network, "score": best_score, "generation": evolution.generation}
 
 @app.post("/event")
