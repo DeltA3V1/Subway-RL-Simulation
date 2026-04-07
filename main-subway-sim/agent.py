@@ -79,10 +79,11 @@ class Agent:
         network = {
             "nodes": [],
             "edges": set(), 
+            "render_edges": [],
             "built_indices": set()
         }
 
-        for line in self.dna:
+        for line_idx, line in enumerate(self.dna):
             for idx in line:
                 if idx not in cand_to_local_map:
                     local_idx = len(network["nodes"])
@@ -98,11 +99,18 @@ class Agent:
                 if from_idx != to_idx:
                     network["edges"].add(frozenset([from_idx, to_idx]))
 
+                    network["render_edges"].append({
+                        "from": from_idx, 
+                        "to": to_idx, 
+                        "line_id": line_idx
+                    })
+
         return network
 
     def return_network(self, candidates):
         network = self.build_network(candidates)
-        network["edges"] = [{"from": list(e)[0], "to": list(e)[1]} for e in network["edges"]]
+        network["edges"] = network["render_edges"]
+        del network["render_edges"]
         return network
 
     def mutate(self, num_candidates):
