@@ -136,9 +136,10 @@
     <div id="bottom-panel">
         <h3>Controls & Parameters</h3>
         <p>Adjust reinforcement learning variables and simulation speed.</p>
-        <button onclick="toggleGrowth()">Toggle Population Growth</button>
-        <button onclick="toggleSpeed()">Toggle Growth Speed</button>
-        <button onclick="resetSimulation()">Reset Simulation</button>
+        <button onclick="toggleGrowth()">Toggle Active State</button>
+        <button id="toggle-active" onclick="toggleActive()">Start Simulation</button>
+        <button onclick="toggleSpeed()">Toggle Step Speed</button>
+        <button style="background-color:red" onclick="resetSimulation()">Reset Simulation</button>
     </div>
     
     <script src="./sketch.js" defer></script>

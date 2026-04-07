@@ -1,4 +1,5 @@
 const GRID_SIZE = 30;
+const LINE_SPACING = 4;
 const API_URL = 'https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev'; 
 
 const STANDALONE_TERRAIN = {
@@ -43,12 +44,19 @@ let edges = [];
 
 let worldState = null;
 let displayText = true;
-let fetching = false;
+let fetchingAgent = false;
+let fetchingPop = false; 
+let running = false;
+
 let evolutionInterval;
+let popInterval;
 
 // temporary: seperation of growth
 let runAgent = false;
 let runPop = true;
+
+let popSpeed = 250;
+let agentSpeed = 1000;
 
 // layers
 let terrainLayer = true;
@@ -58,9 +66,6 @@ let networkLayer = true;
 // color
 let terrainColors = {};
 let electricCyan, cyanBlue;
-
-let framesPerStep = 15;
-
 
 function setup() {
     let cnv = createCanvas(600, 600);
@@ -72,8 +77,6 @@ function setup() {
     electricCyan = color(0, 240, 255);
     cyanBlue = color(0, 179, 255);
     setColors(DEFAULT_TERRAIN);
-
-    evolutionInterval = setInterval(runEvolutionStep, 500);
 }
 
 function setColors(colors) {
@@ -89,11 +92,6 @@ function draw() {
         text('Loading simulation data...', width / 2, height / 2);
         return;
     }
-
-    if (runPop && frameCount % framesPerStep == 0) {
-        step()
-    }
-
     let cellSize = width / GRID_SIZE;
         
     background(0);
@@ -136,33 +134,73 @@ function drawNetwork(stations, edges, cellSize) {
         return;
     }
 
+    // Group edges by shared segments
+    let segments = {};
     for (let edge of edges) {
-        let fromNode = stations[edge.from];
-        let toNode = stations[edge.to];
+        let minIdx = Math.min(edge.from, edge.to);
+        let maxIdx = Math.max(edge.from, edge.to);
+        let key = `${minIdx}_${maxIdx}`;
+
+        if (!segments[key]) {
+            segments[key] = [];
+        }
+        segments[key].push(edge.line_id);
+    }
+
+    // Draw the segments with offsets
+    for (let key in segments) {
+        let [fromIdx, toIdx] = key.split('_').map(Number);
+        let lineIds = segments[key];
         
+        let fromNode = stations[fromIdx];
+        let toNode = stations[toIdx];
         let p1 = cellToPixel(fromNode.row, fromNode.col);
         let p2 = cellToPixel(toNode.row, toNode.col);
 
-        let lineId = edge.line_id || 0;
-        let hexColor = LINE_COLORS[lineId % LINE_COLORS.length];
-        let c = color(hexColor);
+        // Normal (perpendicular) vector
+        let dx = p2.x - p1.x;
+        let dy = p2.y - p1.y;
+        let len = Math.sqrt(dx * dx + dy * dy);
+        
+        // Normalize
+        let nx = -dy / len; 
+        let ny = dx / len;
 
-        stroke(10, 10, 20, 180);
-        strokeWeight(5);
-        line(p1.x, p1.y, p2.x, p2.y);
+        for (let i = 0; i < lineIds.length; i++) {
+            let lineId = lineIds[i];
+            let hexColor = LINE_COLORS[lineId % LINE_COLORS.length];
+            
+            // Calculate offset multiplier for centering
+            let offsetMultiplier = i - (lineIds.length - 1) / 2;
+            
+            let offsetX = nx * LINE_SPACING * offsetMultiplier;
+            let offsetY = ny * LINE_SPACING * offsetMultiplier;
 
-        stroke(c);
-        strokeWeight(2.5);
-        line(p1.x, p1.y, p2.x, p2.y);
+            // Apply offsets to start and end points
+            let x1 = p1.x + offsetX;
+            let y1 = p1.y + offsetY;
+            let x2 = p2.x + offsetX;
+            let y2 = p2.y + offsetY;
+
+            // Draw shadow/outline
+            stroke(10, 10, 20, 180);
+            strokeWeight(5);
+            line(x1, y1, x2, y2);
+
+            // Draw colored line
+            stroke(color(hexColor));
+            strokeWeight(2.5);
+            line(x1, y1, x2, y2);
+        }
     }
 
+    // Draw stations
     noStroke();
-    let maxPop = Math.max(...stations.map(s => s.pop), 1);
+    let maxPop = Math.max(...stations.map(s => s.pop || 1), 1);
 
     for (let station of stations) {
         let p = cellToPixel(station.row, station.col);
-        
-        let radius = map(station.pop, 0, maxPop, 6, 14);
+        let radius = map(station.pop || 1, 0, maxPop, 6, 14);
         
         stroke(0); // Black outline
         strokeWeight(2);
@@ -214,6 +252,18 @@ function keyPressed() {
     }
 }
 
+function toggleActive() {
+    running = !running;
+    if (!running) {
+        clearInterval(evolutionInterval);
+        clearInterval(popInterval);
+    } else {
+        evolutionInterval = setInterval(runEvolutionStep, agentSpeed);
+        popInterval = setInterval(step, popSpeed);
+    }
+    document.getElementById('toggle-active').innerText = running ? "Pause Simulation" : "Start Simulation";
+}
+
 function toggleGrowth() {
     runPop = !runPop;
     runAgent = !runAgent;
@@ -221,7 +271,15 @@ function toggleGrowth() {
 }
 
 function toggleSpeed() {
-    framesPerStep = framesPerStep === 15 ? 3 : 15;
+    popSpeed = popSpeed === 250 ? 50 : 250;
+    agentSpeed = agentSpeed === 1000 ? 500 : 1000;
+
+    if (running) {
+        clearInterval(evolutionInterval);
+        clearInterval(popInterval);
+        evolutionInterval = setInterval(runEvolutionStep, agentSpeed);
+        popInterval = setInterval(step, popSpeed);
+    }
 }
 
 function cellToPixel(row, col) {
@@ -237,18 +295,23 @@ function pixelToCell(px, py) {
 
 
 async function step() {
+    if (!runPop || fetchingPop) return;
+    fetchingPop = true;
+
     try {
         const response = await fetch(`${API_URL}/step`);
         const data = await response.json();
         heatmapData = data.heatmap;
     } catch (error) {
         console.error('Error fetching data:', error);
+    } finally {
+        fetchingPop = false;
     }
 }
 
 async function runEvolutionStep() {
-    if (!runAgent || fetching) return;
-    fetching = true;
+    if (!runAgent || fetchingAgent) return;
+    fetchingAgent = true;
     
     try {
         const response = await fetch(`${API_URL}/step_generation`);
@@ -269,7 +332,11 @@ async function runEvolutionStep() {
 
 async function resetSimulation() {
     try {
+        running = false;
         clearInterval(evolutionInterval);
+        clearInterval(popInterval);
+        document.getElementById('toggle-active').innerText = "Start Simulation";
+
         await fetch(`${API_URL}/reset`, { method: 'POST' });
         await fetchAndInit();
     } catch (error) {
