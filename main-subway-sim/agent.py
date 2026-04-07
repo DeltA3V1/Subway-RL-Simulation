@@ -14,7 +14,6 @@ MUTATION_RATE = 0.1
 GROWTH_RATE = 0.1
 DECAY_RATE = 0.05
 
-# sort by position maybe?
 line_dna = [
     [1, 3, 5, 7],
     [2, 4, 6, 8]
@@ -68,7 +67,7 @@ class Agent:
         return (line[:idx], line[idx:])
 
     def replace_station(self, line, num_candidates):
-        idx = random.randrange(0, len(line) - 1)
+        idx = random.randrange(0, len(line))
         station = random.randrange(0, num_candidates)
         if station not in line:
             line[idx] = station

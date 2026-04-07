@@ -3,9 +3,15 @@ let terrainData = [];
 let network = [];
 let stations = [];
 let edges = [];
+
 let worldState = null;
 let displayText = true;
-let running = true;
+let fetching = false;
+
+// temporary: seperation of growth
+let runAgent = false;
+let runPop = true;
+
 let terrainColors;
 let framesPerStep = 15;
 
@@ -30,7 +36,7 @@ function setup() {
         '3': color(140, 140, 140), // Mountain
         '4': color(255, 255, 255)  // Snow Peak
     };
-    setInterval(runEvolutionStep, 500);
+    let evolutionInterval = setInterval(runEvolutionStep, 500);
 }
 
 function draw() {
@@ -41,7 +47,7 @@ function draw() {
         return;
     }
 
-    if (running && frameCount % framesPerStep == 0) {
+    if (runPop && frameCount % framesPerStep == 0) {
         step()
     }
 
@@ -132,14 +138,16 @@ function keyPressed() {
         displayText = !displayText;
     }
     if (keyCode === ENTER) {
-        running = !running;
-        document.getElementById('stat-active').innerText = running ? "Population" : "Agent"
+        runPop = !runPop;
+        runAgent = !runAgent;
+        document.getElementById('stat-active').innerText = runPop ? "Population" : "Agent"
     }
 }
 
-function growPopulation() {
-    running = !running;
-    document.getElementById('stat-active').innerText = running ? "Population" : "Agent"
+function toggleGrowth() {
+    runPop = !runPop;
+    runAgent = !runAgent;
+    document.getElementById('stat-active').innerText = runPop ? "Population" : "Agent"
 }
 
 function toggleSpeed() {
@@ -148,10 +156,12 @@ function toggleSpeed() {
 
 function cellToPixel(row, col) {
     let cellSize = width / GRID_SIZE;
-    return {
-        x: col * cellSize + (cellSize / 2),
-        y: row * cellSize + (cellSize / 2)
-    };
+    return { x: col * cellSize + (cellSize / 2), y: row * cellSize + (cellSize / 2) };
+}
+
+function pixelToCell(px, py) {
+    let cellSize = width / GRID_SIZE;
+    return { row: Math.floor(py / cellSize), col: Math.floor(px / cellSize) };
 }
 
 
@@ -167,7 +177,8 @@ async function step() {
 }
 
 async function runEvolutionStep() {
-    if (running) return;
+    if (!runAgent || fetching) return;
+    fetching = true;
     
     try {
         const response = await fetch(`${API_URL}/step_generation`);
@@ -181,11 +192,14 @@ async function runEvolutionStep() {
         
     } catch (error) {
         console.error('Error fetching generation:', error);
+    } finally {
+        fetching = false;
     }
 }
 
 async function resetSimulation() {
     try {
+        clearInterval(evolutionInterval);
         await fetch(`${API_URL}/reset`, { method: 'POST' });
         await fetchAndInit();
     } catch (error) {
@@ -199,7 +213,8 @@ async function fetchAndInit() {
         const data = await response.json();
         heatmapData = data.heatmap;
         terrainData = data.terrain;
-        running = true;
+        runPop = true;
+        runAgent = false;
     } catch (error) {
         console.error('Error fetching data:', error);
     }

@@ -39,11 +39,11 @@ if num_cands >= 5:
     check_scenario("Two Disconnected Lines", [[0, 1], [2, 3]])
 
     # Scenario C: Single Long Line
-    # A single continuous line of 4 stops. Should score higher than B.
+    # A single continuous line of 4 stops
     check_scenario("Single Long Line", [[0, 1, 2, 3]])
 
     # Scenario D: Transfer Station (Intersection)
-    # Station index 1 is shared (one component of size 5).
+    # Station index 1 is shared (one component of size 5)
     check_scenario("Intersecting Lines", [[0, 1, 2], [3, 1, 4]])
 
 else:
