@@ -23,7 +23,7 @@ line_dna = [
 
 class Agent:
     def __init__(self, dna=None, num_candidates=30):
-        if dna:
+        if dna is not None:
             self.dna = copy.deepcopy(dna)
         else:
             self.dna = [self.get_random_line(num_candidates) for _ in range(random.randint(1, 5))]
@@ -50,7 +50,7 @@ class Agent:
         
         station = random.randrange(0, num_candidates)
         if station not in line:
-            line.insert(random.randrange(0, len(line)), station)
+            line.insert(random.randint(0, len(line)), station)
         return line
 
     def remove_station(self, line):

@@ -264,16 +264,20 @@ function toggleActive() {
     document.getElementById('toggle-active').innerText = running ? "Pause Simulation" : "Start Simulation";
 }
 
-function toggleGrowth() {
+function toggleState() {
     runPop = !runPop;
     runAgent = !runAgent;
     document.getElementById('stat-active').innerText = runPop ? "Population" : "Agent"
 }
 
 function toggleSpeed() {
-    popSpeed = popSpeed === 250 ? 50 : 250;
+    popSpeed = popSpeed === 250 ? 30 : 250;
     agentSpeed = agentSpeed === 1000 ? 500 : 1000;
-
+    if (popSpeed === 30) {
+        document.getElementById('toggle-speed').innerText = "Speed: Fast";
+    } else {
+        document.getElementById('toggle-speed').innerText = "Speed: Slow";
+    }
     if (running) {
         clearInterval(evolutionInterval);
         clearInterval(popInterval);
@@ -326,7 +330,7 @@ async function runEvolutionStep() {
     } catch (error) {
         console.error('Error fetching generation:', error);
     } finally {
-        fetching = false;
+        fetchingAgent = false;
     }
 }
 
@@ -352,6 +356,7 @@ async function fetchAndInit() {
         terrainData = data.terrain;
         runPop = true;
         runAgent = false;
+        document.getElementById('stat-active').innerText = "Population";
     } catch (error) {
         console.error('Error fetching data:', error);
     }
