@@ -35,7 +35,7 @@ async def test():
 
 @app.get("/step")
 async def step():
-    world.expand_heatmap(2)
+    world.expand_heatmap(5)
     return {"heatmap": world.heatmap}
 
 @app.get("/step_generation")

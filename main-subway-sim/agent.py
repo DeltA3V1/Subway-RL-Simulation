@@ -5,7 +5,7 @@ import heapq
 
 GRID_SIZE = 30
 COVERAGE_RADIUS = 3
-REWARD_CONFIG = {"coverage": 1, "track_cost": -0.5, "connectivity_bonus": 5, "station_cost": -15}
+REWARD_CONFIG = {"coverage": 1, "track_cost": -0.5, "connectivity_bonus": 100, "station_cost": -20}
 MAX_EDGE_LENGTH = 100
 
 MAX_LINE_LENGTH = 10
@@ -30,7 +30,7 @@ class Agent:
 
 
     def get_random_action(self, line, num_candidates):
-        match random.randint(1, 4):
+        match random.randint(1, 6):
             case 1:
                 return self.extend_line(line, num_candidates)
             case 2:
@@ -39,6 +39,10 @@ class Agent:
                 return self.split_line(line)
             case 4:
                 return self.replace_station(line, num_candidates)
+            case 5:
+                return self.swap_stations(line)
+            case 6:
+                return self.reverse_segment(line)
         
     def get_random_line(self, num_candidates=30):
         line_length = random.randint(3, MAX_LINE_LENGTH)
@@ -73,6 +77,21 @@ class Agent:
             line[idx] = station
         return line
 
+    def swap_stations(self, line):
+        if len(line) < 3:
+            return line
+        
+        idx1, idx2 = sorted(random.sample(range(len(line)), 2))
+        line[idx1], line[idx2] = line[idx2], line[idx1]
+        return line
+
+    def reverse_segment(self, line):
+        if len(line) < 3:
+            return line
+        
+        idx1, idx2 = sorted(random.sample(range(len(line)), 2))
+        line[idx1:idx2+1] = reversed(line[idx1:idx2+1])
+        return line
         
     def build_network(self, candidates):
         cand_to_local_map = {}
@@ -186,7 +205,10 @@ class Agent:
 
         largest_component_size = max(component_sizes.values()) if component_sizes else 0
 
-        score += largest_component_size * REWARD_CONFIG["connectivity_bonus"]
+        try:
+            score += (largest_component_size / len(network["nodes"])) * REWARD_CONFIG["connectivity_bonus"]
+        except ZeroDivisionError:
+            pass
 
         return score
 
