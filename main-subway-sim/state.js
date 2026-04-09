@@ -10,7 +10,7 @@ export let displayText = true;
 export let fetchingAgent = false;
 export let fetchingPop = false;
 export let running = false;
-export let metroNetwork = false;
+export let simpleNetwork = true;
 
 // Simulation state
 export let runAgent = false;
@@ -42,7 +42,7 @@ export function setDisplayText(value) { displayText = value; }
 export function setFetchingPop(value) { fetchingPop = value; }
 export function setFetchingAgent(value) { fetchingAgent = value; }
 export function setRunning(value) { running = value; }
-export function setMetroNetwork(value) {metroNetwork = value; }
+export function setSimpleNetwork(value) {simpleNetwork = value; }
 export function setRunAgent(value) { runAgent = value; }
 export function setRunPop(value) { runPop = value; }
 export function setPopSpeed(value) { popSpeed = value; }

@@ -1,5 +1,6 @@
 import { fetchAndInit, resetSimulation } from './api.js';
-import { drawTerrain, drawHeatmap, drawHeatmapText, drawNetwork, GRID_SIZE } from './renderer.js';
+import { buildSimpleLayout, buildMetroLayout } from './layout.js';
+import { drawTerrain, drawHeatmap, drawHeatmapText, drawSimpleLayout, drawMetroLayout, GRID_SIZE } from './renderer.js';
 import { DEFAULT_TERRAIN, STANDALONE_TERRAIN } from './config.js';
 import * as state from './state.js';
 import { toggleActive, toggleState, toggleSpeed } from './controls.js';
@@ -47,10 +48,12 @@ function draw() {
         }
     }
     if (state.networkLayer) {
-        if (state.metroNetwork) {
-            
+        if (state.simpleNetwork) {
+            let layout = buildSimpleLayout(state.stations, state.edges, cellSize);
+            drawSimpleLayout(layout);
         } else {
-            drawNetwork(state.stations, state.edges, cellSize);
+            let layout = buildMetroLayout(state.stations, state.edges, cellSize)
+            drawMetroLayout(layout);
         }
     };
 }
@@ -73,7 +76,7 @@ function keyPressed() {
     }
 
     if (key === 'm' || key === 'M') {
-        state.setMetroNetwork(!state.metroNetwork);
+        state.setSimpleNetwork(!state.simpleNetwork);
     }
 
     if (keyCode === ENTER) {
