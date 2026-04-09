@@ -3,7 +3,7 @@ import * as state from './state.js';
 
 export const GRID_SIZE = 30;
 
-function cellToPixel(row, col) {
+export function cellToPixel(row, col) {
     let cellSize = width / GRID_SIZE;
     return { x: col * cellSize + (cellSize / 2), y: row * cellSize + (cellSize / 2) };
 }

@@ -46,7 +46,13 @@ function draw() {
             };
         }
     }
-    if (state.networkLayer) {drawNetwork(state.stations, state.edges, cellSize)};
+    if (state.networkLayer) {
+        if (state.metroNetwork) {
+            
+        } else {
+            drawNetwork(state.stations, state.edges, cellSize);
+        }
+    };
 }
 
 function keyPressed() {
@@ -64,6 +70,10 @@ function keyPressed() {
 
     if (key === 't' || key === 'T') {
         state.setDisplayText(!state.displayText);
+    }
+
+    if (key === 'm' || key === 'M') {
+        state.setMetroNetwork(!state.metroNetwork);
     }
 
     if (keyCode === ENTER) {

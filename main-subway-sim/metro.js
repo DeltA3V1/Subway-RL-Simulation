@@ -1,17 +1,5 @@
-function normalizePositions(nodes, canvasW, canvasH, padding = 60) {
-  const rows = nodes.map(n => n.row), cols = nodes.map(n => n.col);
-  const [rMin, rMax] = [Math.min(...rows), Math.max(...rows)];
-  const [cMin, cMax] = [Math.min(...cols), Math.max(...cols)];
-  const stationPos = new Map();
-  nodes.forEach((n, i) => {
-    stationPos.set(i, {
-      x: rMax === rMin ? canvasW / 2 : map(n.col, cMin, cMax, padding, canvasW - padding),
-      y: rMax === rMin ? canvasH / 2 : map(n.row, rMin, rMax, padding, canvasH - padding)
-    });
-  });
-
-  return stationPos;
-}
+import { LINE_COLORS, LINE_SPACING } from './config.js'
+import { cellToPixel } from './renderer.js'
 
 function routeEdge(p1, p2) {
   const dx = p2.x - p1.x, dy = p2.y - p1.y;
