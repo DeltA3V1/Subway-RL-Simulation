@@ -9,9 +9,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import sim
 import agent
 
+NUM_CANDIDATES = 60
+
 world = sim.WorldState()
-test_agent = agent.Agent()
-evolution = agent.EvolutionLoop(60)
+test_agent = agent.Agent(NUM_CANDIDATES)
+evolution = agent.EvolutionLoop(NUM_CANDIDATES)
 
 app = FastAPI()
 
@@ -25,12 +27,14 @@ app.add_middleware(
 
 @app.get("/init")
 async def read_maps():
-    return {"heatmap": world.heatmap, "terrain": world.terrain, "cand_pos": world.get_candidate_stations()}
+    candidates = world.get_candidate_stations(NUM_CANDIDATES)
+    return {"heatmap": world.heatmap, "terrain": world.terrain, "cand_pos": candidates}
 
 @app.get("/test")
 async def test():
     world.expand_heatmap(100)
-    network = test_agent.build_network(world.get_candidate_stations())
+    candidates = world.get_candidate_stations(NUM_CANDIDATES)
+    network = test_agent.build_network(candidates)
     return {"network": network}
 
 @app.get("/step")
@@ -41,11 +45,12 @@ async def step():
 @app.get("/step_generation")
 async def step_generation():
     # mutate best three
-    new_agents, best_score = evolution.run_generation(world, 60)
+    new_agents, best_score = evolution.run_generation(world)
     # set new population
     evolution.population = new_agents
     # send best network
-    best_network = new_agents[0].return_network(world.get_candidate_stations())
+    candidates = world.get_candidate_stations(NUM_CANDIDATES)
+    best_network = new_agents[0].return_network(candidates)
     return {"best_network": best_network, "score": best_score, "generation": evolution.generation}
 
 @app.post("/event")
@@ -57,5 +62,5 @@ async def event():
 async def reset():
     global world, evolution
     world = sim.WorldState()
-    evolution = agent.EvolutionLoop()
+    evolution = agent.EvolutionLoop(NUM_CANDIDATES)
     return {"status": "ok"}

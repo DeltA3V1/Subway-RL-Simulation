@@ -4,13 +4,13 @@ import agent
 world = sim.WorldState()
 world.expand_heatmap(2000)
 candidates = world.get_candidate_stations()
-num_cands = len(candidates["stations"])
+num_cands = len(candidates)
 
 print(f"--- Testing Line-Based Reward Logic ---")
 print(f"Total Candidates: {num_cands}")
 if num_cands > 0:
     # Safely handle pop check
-    pop = candidates["stations"][0].get('pop', 'Unknown') 
+    pop = candidates[0].get('pop', 'Unknown') 
     print(f"Top Candidate Pop: {pop}")
 print("-" * 50)
 
@@ -19,10 +19,10 @@ def check_scenario(name, dna):
     test_agent = agent.Agent(dna=dna, num_candidates=num_cands)
     
     # Build network
-    net = test_agent.build_network(candidates["stations"])
+    net = test_agent.build_network(candidates)
     
     # Calculate score
-    s = test_agent.score(net, world, candidates["distances"])
+    s = test_agent.score(net, world)
     
     nodes = len(net["nodes"])
     edges = len(net["edges"])
@@ -52,8 +52,8 @@ else:
 # 5. Scenario E: Random Initialized Agent
 random_agent = agent.Agent(num_candidates=num_cands)
 
-random_net = random_agent.build_network(candidates["stations"]) 
-random_score = random_agent.score(random_net, world, candidates["distances"]) 
+random_net = random_agent.build_network(candidates) 
+random_score = random_agent.score(random_net, world) 
 
 print("-" * 50)
 print(f"{'Random Agent DNA':25} | Score: {random_score:8.2f} | Nodes: {len(random_net['nodes'])}, Edges: {len(random_net['edges'])}")

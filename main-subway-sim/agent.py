@@ -23,6 +23,7 @@ line_dna = [
 
 class Agent:
     def __init__(self, num_candidates=30, dna=None):
+        self.num_candidates = num_candidates
         if dna is not None:
             self.dna = copy.deepcopy(dna)
         else:
@@ -105,7 +106,8 @@ class Agent:
             item = line.pop(old)
             line.insert(new, item)
 
-        
+        return line
+    
     def build_network(self, candidates):
         cand_to_local_map = {}
         network = {
@@ -116,21 +118,21 @@ class Agent:
         }
 
         for line_idx, line in enumerate(self.dna):
-            for idx in line:
+            valid_line = [idx for idx in line if isinstance(idx, int) and 0 <= idx < len(candidates)]
+            if not valid_line:
+                continue
+
+            for idx in valid_line:
                 if idx not in cand_to_local_map:
                     local_idx = len(network["nodes"])
-                    
-                    node_data = candidates[idx].copy()
-                    node_data["global_id"] = idx
-                    
-                    network["nodes"].append(node_data)
+                    network["nodes"].append(candidates[idx])
                     cand_to_local_map[idx] = local_idx
                 
                 network["built_indices"].add(idx)
 
-            for i in range(len(line) - 1):
-                from_idx = cand_to_local_map[line[i]]
-                to_idx = cand_to_local_map[line[i + 1]]
+            for i in range(len(valid_line) - 1):
+                from_idx = cand_to_local_map[valid_line[i]]
+                to_idx = cand_to_local_map[valid_line[i + 1]]
 
                 if from_idx != to_idx:
                     network["edges"].add(frozenset([from_idx, to_idx]))
@@ -185,15 +187,15 @@ class Agent:
         return Agent(dna=new_dna, num_candidates=num_candidates)
     
     
-    def score(self, network, world, dists):
+    def score(self, network, world):
         score = 0.0
         covered_cells = set()
 
         # Apply the global track cost for each edge built
         for u, v in network["edges"]:
-            global_u = network["nodes"][u]["global_id"]
-            global_v = network["nodes"][v]["global_id"]
-            dist = dists[global_u][global_v]
+            node_u = network["nodes"][u]
+            node_v = network["nodes"][v]
+            dist = math.dist((node_u["row"], node_u["col"]), (node_v["row"], node_v["col"]))
             score += dist * REWARD_CONFIG["track_cost"]
 
         radius_sq = COVERAGE_RADIUS**2
@@ -247,22 +249,22 @@ class Agent:
 
 class EvolutionLoop:
     def __init__(self, num_candidates=30):
+        self.num_candidates = num_candidates
         self.population = [Agent(num_candidates) for _ in range(20)]
         self.generation = 0
         self.best_score = 0
         self.stagnation_count = 0
         self.stagnation_threshold = 100 # generations
 
-    def run_generation(self, world, num_candidates=30):
+    def run_generation(self, world, num_candidates=None):
+        num_candidates = self.num_candidates if num_candidates is None else num_candidates
         self.generation += 1
-        candidates = world.get_candidate_stations()
-        stations = candidates["stations"]
-        dists = candidates["distances"]
+        candidates = world.get_candidate_stations(num_candidates)
         scored_agents = []
 
         for idx, agent in enumerate(self.population):
-            network = agent.build_network(stations)
-            score = agent.score(network, world, dists)
+            network = agent.build_network(candidates)
+            score = agent.score(network, world)
             scored_agents.append((score, idx, agent))
 
         scored_agents.sort(key=lambda x: x[0], reverse=True)

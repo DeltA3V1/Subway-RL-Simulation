@@ -86,19 +86,7 @@ class WorldState:
         cand = heapq.nlargest(num_candidates, land_cells, key=lambda x: x[0])
 
         candidates = [{"row": r, "col": c, "pop": val} for val, r, c in cand]
-        
-        # Build an O(1) lookup table for distances
-        dist_matrix = [[0.0] * num_candidates for _ in range(num_candidates)]
-        for i in range(num_candidates):
-            for j in range(i + 1, num_candidates):
-                # Calculate once
-                dist = math.dist((candidates[i]["row"], candidates[i]["col"]), 
-                                 (candidates[j]["row"], candidates[j]["col"]))
-                # Store symmetrically 
-                dist_matrix[i][j] = dist_matrix[j][i] = dist
-
-        # Return both the stations and the cache
-        return {"stations": candidates, "distances": dist_matrix}
+        return candidates
     
     def get_circle_offsets(self, radius):
         if radius not in self.radius_masks:
