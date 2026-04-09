@@ -11,7 +11,7 @@ import agent
 
 world = sim.WorldState()
 test_agent = agent.Agent()
-evolution = agent.EvolutionLoop()
+evolution = agent.EvolutionLoop(60)
 
 app = FastAPI()
 
@@ -41,7 +41,7 @@ async def step():
 @app.get("/step_generation")
 async def step_generation():
     # mutate best three
-    new_agents, best_score = evolution.run_generation(world)
+    new_agents, best_score = evolution.run_generation(world, 60)
     # set new population
     evolution.population = new_agents
     # send best network

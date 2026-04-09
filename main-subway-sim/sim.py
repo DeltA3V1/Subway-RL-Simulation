@@ -18,6 +18,7 @@ class WorldState:
         self.init_terrain()
         self.init_heatmap()
         self.land_spots = [(row, col) for row in range(GRID_SIZE) for col in range(GRID_SIZE) if self.terrain[row][col] >= LOW_BOUND and self.terrain[row][col] <= HIGH_BOUND]
+        self.radius_masks = {} # cache for circle offsets
 
 
     def reset_heatmap(self):
@@ -83,20 +84,41 @@ class WorldState:
         ]
         
         cand = heapq.nlargest(num_candidates, land_cells, key=lambda x: x[0])
+
+        candidates = [{"row": r, "col": c, "pop": val} for val, r, c in cand]
         
-        return [{"row": r, "col": c, "pop": val} for val, r, c in cand]
+        # Build an O(1) lookup table for distances
+        dist_matrix = [[0.0] * num_candidates for _ in range(num_candidates)]
+        for i in range(num_candidates):
+            for j in range(i + 1, num_candidates):
+                # Calculate once
+                dist = math.dist((candidates[i]["row"], candidates[i]["col"]), 
+                                 (candidates[j]["row"], candidates[j]["col"]))
+                # Store symmetrically 
+                dist_matrix[i][j] = dist_matrix[j][i] = dist
+
+        # Return both the stations and the cache
+        return {"stations": candidates, "distances": dist_matrix}
     
+    def get_circle_offsets(self, radius):
+        if radius not in self.radius_masks:
+            offsets = []
+            for dr in range(-radius, radius + 1):
+                for dc in range(-radius, radius + 1):
+                    if dr**2 + dc**2 <= radius**2:
+                        offsets.append((dr, dc))
+            self.radius_masks[radius] = offsets
+        return self.radius_masks[radius]
+
     def sum_in_radius(self, center_row, center_col, radius):
         total_sum = 0
         rows = len(self.heatmap)
         cols = len(self.heatmap[0]) if rows > 0 else 0
         
-        # Iterate through a bounding box of radius
-        for r in range(max(0, center_row - radius), min(rows, center_row + radius + 1)):
-            for c in range(max(0, center_col - radius), min(cols, center_col + radius + 1)):
-                # dist check
-                if (r - center_row)**2 + (c - center_col)**2 <= radius**2:
-                    total_sum += self.heatmap[r][c]
-                    
+        for dr, dc in self.get_circle_offsets(radius):
+            r, c = center_row + dr, center_col + dc
+            if 0 <= r < rows and 0 <= c < cols:
+                total_sum += self.heatmap[r][c]
+                
         return total_sum
     

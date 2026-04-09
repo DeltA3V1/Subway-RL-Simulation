@@ -22,7 +22,7 @@ line_dna = [
 #TODO: check how lines sharing tracks work (later: spatial checks)
 
 class Agent:
-    def __init__(self, dna=None, num_candidates=30):
+    def __init__(self, num_candidates=30, dna=None):
         if dna is not None:
             self.dna = copy.deepcopy(dna)
         else:
@@ -30,7 +30,7 @@ class Agent:
 
 
     def get_random_action(self, line, num_candidates):
-        match random.randint(1, 6):
+        match random.randint(1, 7):
             case 1:
                 return self.extend_line(line, num_candidates)
             case 2:
@@ -43,6 +43,8 @@ class Agent:
                 return self.swap_stations(line)
             case 6:
                 return self.reverse_segment(line)
+            case 7:
+                return self.move_station(line)
         
     def get_random_line(self, num_candidates=30):
         line_length = random.randint(3, MAX_LINE_LENGTH)
@@ -92,6 +94,17 @@ class Agent:
         idx1, idx2 = sorted(random.sample(range(len(line)), 2))
         line[idx1:idx2+1] = reversed(line[idx1:idx2+1])
         return line
+    
+    def move_station(self, line):
+        if len(line) < 3:
+            return line
+
+        old = random.randrange(len(line))
+        new = random.randrange(len(line))
+        if old != new:
+            item = line.pop(old)
+            line.insert(new, item)
+
         
     def build_network(self, candidates):
         cand_to_local_map = {}
@@ -106,7 +119,11 @@ class Agent:
             for idx in line:
                 if idx not in cand_to_local_map:
                     local_idx = len(network["nodes"])
-                    network["nodes"].append(candidates[idx])
+                    
+                    node_data = candidates[idx].copy()
+                    node_data["global_id"] = idx
+                    
+                    network["nodes"].append(node_data)
                     cand_to_local_map[idx] = local_idx
                 
                 network["built_indices"].add(idx)
@@ -150,18 +167,33 @@ class Agent:
         if random.random() < GROWTH_RATE:
             new_dna.append(self.get_random_line(num_candidates))
         
+        return Agent(num_candidates=num_candidates, dna=new_dna)
+    
 
-
+    def crossover(self, other, num_candidates):
+        if not self.dna or not other.dna:
+            return self.mutate(num_candidates)
+        
+        new_dna = [list(line) for line in self.dna]
+        donor_line = random.choice(other.dna)
+        
+        # Avoid duplicating too many stops
+        existing_stops = set(s for line in new_dna for s in line)
+        if len(set(donor_line) & existing_stops) < len(donor_line) * 0.5:
+            new_dna.append(list(donor_line))
+    
         return Agent(dna=new_dna, num_candidates=num_candidates)
     
-    def score(self, network, world):
+    
+    def score(self, network, world, dists):
         score = 0.0
         covered_cells = set()
 
         # Apply the global track cost for each edge built
         for u, v in network["edges"]:
-            a, b = network["nodes"][u], network["nodes"][v]
-            dist = math.dist((a["row"], a["col"]), (b["row"], b["col"]))
+            global_u = network["nodes"][u]["global_id"]
+            global_v = network["nodes"][v]["global_id"]
+            dist = dists[global_u][global_v]
             score += dist * REWARD_CONFIG["track_cost"]
 
         radius_sq = COVERAGE_RADIUS**2
@@ -215,17 +247,22 @@ class Agent:
 
 class EvolutionLoop:
     def __init__(self, num_candidates=30):
-        self.population = [Agent(num_candidates=num_candidates) for _ in range(20)]
+        self.population = [Agent(num_candidates) for _ in range(20)]
         self.generation = 0
+        self.best_score = 0
+        self.stagnation_count = 0
+        self.stagnation_threshold = 100 # generations
 
     def run_generation(self, world, num_candidates=30):
         self.generation += 1
         candidates = world.get_candidate_stations()
+        stations = candidates["stations"]
+        dists = candidates["distances"]
         scored_agents = []
 
         for idx, agent in enumerate(self.population):
-            network = agent.build_network(candidates)
-            score = agent.score(network, world)
+            network = agent.build_network(stations)
+            score = agent.score(network, world, dists)
             scored_agents.append((score, idx, agent))
 
         scored_agents.sort(key=lambda x: x[0], reverse=True)
@@ -234,10 +271,32 @@ class EvolutionLoop:
         new_generation = []
         new_generation.extend(top_3)
 
-        while len(new_generation) < 20:
-            parent = random.choice(top_3)
-            new_generation.append(parent.mutate(num_candidates))
+        # stagnation -> randoms + mutations
+        if self.stagnation_count > self.stagnation_threshold:
+            while len(new_generation) < 20:
+                if random.random() < 0.3:
+                    new_generation.append(Agent(num_candidates))
+                else:
+                    parent = random.choice(top_3)
+                    new_generation.append(parent.mutate(num_candidates))
+                    
+        # normal -> crossovers + mutations
+        else:
+            while len(new_generation) < 20:
+                if random.random() < 0.3 and len(top_3) >= 2:
+                    a, b = random.sample(top_3, 2)
+                    new_generation.append(a.crossover(b, num_candidates))
+                else:
+                    parent = random.choice(top_3)
+                    new_generation.append(parent.mutate(num_candidates))
+
+        best_score = scored_agents[0][0]
+        if best_score > self.best_score:
+            self.best_score = best_score
+            self.stagnation_count = 0
+        else:
+            self.stagnation_count += 1
         
-        return new_generation, scored_agents[0][0] # new generation, best score
+        return new_generation, best_score
 
 
