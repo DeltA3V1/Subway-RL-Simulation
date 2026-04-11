@@ -9,10 +9,13 @@ REWARD_CONFIG = {"coverage": 1, "track_cost": -0.5, "connectivity_bonus": 100, "
 MAX_EDGE_LENGTH = 100
 
 MAX_LINE_LENGTH = 10
+AGENTS = 30
 
 MUTATION_RATE = 0.1
 GROWTH_RATE = 0.1
 DECAY_RATE = 0.05
+ELITE_THRESHOLD = 0.85
+TRACK_COST_SCALING = 1.2
 
 line_dna = [
     [1, 3, 5, 7],
@@ -56,8 +59,9 @@ class Agent:
             return line
         
         station = random.randrange(0, num_candidates)
-        if station not in line:
-            line.insert(random.randint(0, len(line)), station)
+        while station in line:
+            station = random.randrange(0, num_candidates)
+        line.insert(random.randint(0, len(line)), station)
         return line
 
     def remove_station(self, line):
@@ -76,8 +80,10 @@ class Agent:
     def replace_station(self, line, num_candidates):
         idx = random.randrange(0, len(line))
         station = random.randrange(0, num_candidates)
-        if station not in line:
-            line[idx] = station
+        
+        while station in line:
+            station = random.randrange(0, num_candidates)
+        line[idx] = station
         return line
 
     def swap_stations(self, line):
@@ -151,25 +157,25 @@ class Agent:
         del network["render_edges"]
         return network
 
-    def mutate(self, num_candidates):
-        new_dna = [list(line) for line in self.dna if random.random() > DECAY_RATE]
-        temp_dna = []
-        for i, line in enumerate(new_dna):
-            if random.random() < MUTATION_RATE:
-                new_line = self.get_random_action(line, num_candidates)
-                if isinstance(new_line, tuple):
-                    new_dna[i] = new_line[0]
-                    temp_dna.append(new_line[1])
-                else:
-                    new_dna[i] = new_line
-        
-        new_dna = [line for line in new_dna if len(line) >= 2]
-        new_dna.extend(temp_dna)
+    def mutate(self, num_candidates, cycles=1):
+        working_dna = [list(line) for line in self.dna]
+        for _ in range(cycles):
+            working_dna = [line for line in working_dna if random.random() > DECAY_RATE]
+            temp_dna = []
+            for i, line in enumerate(working_dna):
+                if random.random() < MUTATION_RATE:
+                    new_line = self.get_random_action(line, num_candidates)
+                    if isinstance(new_line, tuple):
+                        working_dna[i] = new_line[0]
+                        temp_dna.append(new_line[1])
+                    else:
+                        working_dna[i] = new_line
+            working_dna = [line for line in working_dna if len(line) >= 2]
+            working_dna.extend(temp_dna)
+            if random.random() < GROWTH_RATE:
+                working_dna.append(self.get_random_line(num_candidates))
 
-        if random.random() < GROWTH_RATE:
-            new_dna.append(self.get_random_line(num_candidates))
-        
-        return Agent(num_candidates=num_candidates, dna=new_dna)
+        return Agent(num_candidates=num_candidates, dna=working_dna)
     
 
     def crossover(self, other, num_candidates):
@@ -196,7 +202,7 @@ class Agent:
             node_u = network["nodes"][u]
             node_v = network["nodes"][v]
             dist = math.dist((node_u["row"], node_u["col"]), (node_v["row"], node_v["col"]))
-            score += dist * REWARD_CONFIG["track_cost"]
+            score += (dist ** TRACK_COST_SCALING) * REWARD_CONFIG["track_cost"]
 
         radius_sq = COVERAGE_RADIUS**2
         for i, node in enumerate(network["nodes"]):
@@ -250,7 +256,7 @@ class Agent:
 class EvolutionLoop:
     def __init__(self, num_candidates=30):
         self.num_candidates = num_candidates
-        self.population = [Agent(num_candidates) for _ in range(20)]
+        self.population = [Agent(num_candidates) for _ in range(AGENTS)]
         self.generation = 0
         self.best_score = 0
         self.stagnation_count = 0
@@ -269,27 +275,27 @@ class EvolutionLoop:
 
         scored_agents.sort(key=lambda x: x[0], reverse=True)
         top_3 = [item[2] for item in scored_agents[:3]]
-        
+        top_agents = top_3 + [item[2] for item in scored_agents[3:] if item[0] > self.best_score * ELITE_THRESHOLD]
         new_generation = []
-        new_generation.extend(top_3)
+        new_generation.extend(top_agents[:10])
 
         # stagnation -> randoms + mutations
         if self.stagnation_count > self.stagnation_threshold:
-            while len(new_generation) < 20:
+            while len(new_generation) < AGENTS:
                 if random.random() < 0.3:
                     new_generation.append(Agent(num_candidates))
                 else:
-                    parent = random.choice(top_3)
-                    new_generation.append(parent.mutate(num_candidates))
+                    parent = random.choice(top_agents)
+                    new_generation.append(parent.mutate(num_candidates, 2))
                     
         # normal -> crossovers + mutations
         else:
-            while len(new_generation) < 20:
-                if random.random() < 0.3 and len(top_3) >= 2:
-                    a, b = random.sample(top_3, 2)
+            while len(new_generation) < AGENTS:
+                if random.random() < 0.3 and len(top_agents) >= 2:
+                    a, b = random.sample(top_agents, 2)
                     new_generation.append(a.crossover(b, num_candidates))
                 else:
-                    parent = random.choice(top_3)
+                    parent = random.choice(top_agents)
                     new_generation.append(parent.mutate(num_candidates))
 
         best_score = scored_agents[0][0]
