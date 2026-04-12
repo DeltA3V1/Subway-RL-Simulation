@@ -34,7 +34,10 @@ export const LINE_COLORS = [
     '#0070BD', // Blue line
     '#9B2EA0', // Purple line
     '#C0953B', // Brown line
+    '#A1D884', // Light Green line
+    '#79BCE8', // Light Blue line
 ];
+
 
 export const DEFAULT_SPEEDS = {
     popSlow: 250,

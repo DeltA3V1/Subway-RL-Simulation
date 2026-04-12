@@ -8,12 +8,24 @@
     
     <style>
         :root {
-            --bg-color: #f5f0e1;      /* Clean Light Gray */
-            --card-bg: #FFFFFF;       /* Pure White */
-            --text-color: #1E293B;    /* Deep Slate */
-            --text-muted: #64748B;    /* Muted Blue-Gray */
-            --accent: #4F46E5;        /* Indigo */
-            --border: #E2E8F0;        /* Soft Border */
+            --bg-color: #f5f0e1;
+            --card-bg: #FFFFFF;
+            --text-color: #1E293B;
+            --text-muted: #64748B;
+            --accent: #4F46E5;
+            --border: #E2E8F0;
+            --main-width: 660px;
+
+            /* Timeline */
+            --tl-bg: #0e1117;
+            --tl-card: #181d29;
+            --tl-card-hover: #1f2637;
+            --tl-border: #2a3144;
+            --tl-selected: #4F46E5;
+            --tl-gen: #94a3b8;
+            --tl-score: #e2e8f0;
+            --tl-thumb: 88px;
+            --tl-card-w: 96px;
         }
 
         body {
@@ -37,15 +49,13 @@
         #canvas-container {
             background: var(--card-bg);
             padding: 10px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-                        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 
+                        0 2px 4px -1px rgba(0,0,0,0.06);
             border: 1px solid var(--border);
             border-radius: 12px;
         }
 
-        canvas {
-            display: block;
-        }
+        canvas { display: block; }
 
         #hud-container {
             display: flex;
@@ -55,7 +65,8 @@
             margin-top: 20px;
             border-radius: 12px;
             width: 100%;
-            max-width: 600px;
+            max-width: var(--main-width);
+            box-sizing: border-box;
             border: 1px solid var(--border);
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
@@ -74,6 +85,141 @@
             font-weight: 700;
         }
 
+        #timeline-panel {
+            width: 100%;
+        max-width: var(--main-width);
+        box-sizing: border-box;
+            margin-top: 20px;
+            background: var(--tl-bg);
+            border: 1px solid var(--tl-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px 8px;
+            border-bottom: 1px solid var(--tl-border);
+        }
+
+        #timeline-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--tl-gen);
+        }
+
+        #snap-count {
+            font-size: 0.68rem;
+            color: #3d4a63;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #snap-scroll {
+            padding: 16px;
+        }
+
+        #snap-inner {
+            display: grid;
+            /* 6 equal columns */
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .snap-card {
+            width: 100%;
+            position: relative;
+            background: var(--tl-card);
+            border: 1px solid var(--tl-border);
+            border-radius: 7px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s, transform 0.15s;
+            animation: snap-in 0.25s ease both;
+        }
+        @keyframes snap-in {
+            from { opacity: 0; transform: translateY(6px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0)   scale(1); }
+        }
+        .snap-card:hover {
+            background: var(--tl-card-hover);
+            border-color: #4a5568;
+            transform: translateY(-2px);
+        }
+        .snap-card.snap-selected {
+            border-color: var(--tl-selected);
+            box-shadow: 0 0 0 1px var(--tl-selected);
+        }
+
+        /* Delete button */
+        .snap-delete {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            margin: 0;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.7);
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 16px;
+            text-align: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.12s, background 0.12s, color 0.12s;
+        }
+        .snap-card:hover .snap-delete {
+            opacity: 1;
+        }
+        .snap-delete:hover {
+            background: #e53e3e !important;
+            color: #fff !important;
+            opacity: 1 !important;
+        }
+        .snap-card canvas {
+            display: block;
+            width: var(--tl-card-w);
+            height: var(--tl-thumb);
+            /* scale the 88x88 canvas to the card width */
+            image-rendering: pixelated;
+        }
+
+        .snap-label {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 6px 5px;
+            line-height: 1;
+        }
+        .snap-gen {
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: var(--tl-gen);
+            font-variant-numeric: tabular-nums;
+        }
+        .snap-score {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--tl-score);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .snap-empty {
+            font-size: 0.75rem;
+            color: #2e3a50;
+            align-self: center;
+            padding: 8px 0;
+            white-space: nowrap;
+        }
+
+        /* Controls panel */
+
         #bottom-panel {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -81,7 +227,8 @@
             margin-top: 20px;
             border-radius: 12px;
             width: 100%;
-            max-width: 600px;
+            max-width: var(--main-width);
+            box-sizing: border-box;
             text-align: center;
         }
 
@@ -108,10 +255,7 @@
             cursor: pointer;
             transition: opacity 0.2s;
         }
-
-        button:hover {
-            opacity: 0.8;
-        }
+        button:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -142,7 +286,34 @@
         <button id="toggle-speed" onclick="toggleSpeed()">Speed: Slow</button>
         <button style="background-color:red" onclick="resetSimulation()">Reset Simulation</button>
     </div>
-    
+
+    <!-- Network History Timeline -->
+    <div id="timeline-panel">
+        <div id="timeline-header">
+            <span id="timeline-title">⬡ Network Landmarks</span>
+            <span id="snap-count">0 snapshots</span>
+        </div>
+        <div id="snap-scroll">
+            <div id="snap-inner">
+                <div class="snap-empty">Landmarks will appear here as the score improves</div>
+            </div>
+        </div>
+    </div>
     <script type="module" src="./sketch.js" defer></script>
+
+    <!-- Update snap-count badge whenever snapshots change -->
+    <script type="module">
+        import * as state from './state.js';
+
+        // Lightweight MutationObserver on the strip to keep the counter in sync
+        const inner = document.getElementById('snap-inner');
+        const counter = document.getElementById('snap-count');
+
+        const observer = new MutationObserver(() => {
+            const n = inner.querySelectorAll('.snap-card').length;
+            counter.textContent = `${n} snapshot${n !== 1 ? 's' : ''}`;
+        });
+        observer.observe(inner, { childList: true });
+    </script>
 </body>
 </html>

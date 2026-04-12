@@ -1,4 +1,5 @@
 import * as state from './state.js';
+import { saveSnapshot, clearSnapshots } from './snapshots.js';
 
 const API_URL = 'https://crispy-capybara-r94xj4j7v7vcwpj-8000.app.github.dev'; 
 
@@ -30,6 +31,15 @@ export async function runEvolutionStep() {
         
         document.getElementById('stat-reward').innerText = data.score.toFixed(2);
         document.getElementById('stat-generation').innerText = data.generation;
+
+        if (data.score_improved) {
+            saveSnapshot(
+                data.best_network.nodes,
+                data.best_network.edges,
+                data.generation,
+                data.score,
+            );
+        }
         
     } catch (error) {
         console.error('Error fetching generation step:', error);
@@ -44,6 +54,9 @@ export async function resetSimulation() {
         clearInterval(state.evolutionInterval);
         clearInterval(state.popInterval);
         document.getElementById('toggle-active').innerText = "Start Simulation";
+
+        // --- NEW: clear timeline on reset ---
+        clearSnapshots();
 
         await fetch(`${API_URL}/reset`, { method: 'POST' });
         await fetchAndInit();

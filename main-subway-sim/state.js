@@ -33,6 +33,9 @@ export let cyanBlue;
 export let evolutionInterval;
 export let popInterval;
 
+// Network snapshot history { stations, edges, generation, score }
+export let snapshots = [];
+
 // Setter functions
 export function setHeatmapData(data) { heatmapData = data; }
 export function setTerrainData(data) { terrainData = data; }
@@ -54,3 +57,4 @@ export function setTerrainColors(colors) { terrainColors = colors; }
 export function setCyanBlue(c) { cyanBlue = c; }
 export function setEvolutionInterval(interval) { evolutionInterval = interval; }
 export function setPopInterval(interval) { popInterval = interval; }
+export function setSnapshots(data) { snapshots = data; }
