@@ -13,7 +13,7 @@ import { LINE_COLORS } from './config.js';
 
 const GRID_SIZE   = 30;
 const THUMB_SIZE  = 88;   // px
-const MAX_SNAPS   = 28;   // hard cap
+const MAX_SNAPS   = 30;   // hard cap
 const KEEP_ENDS   = 3;    // never cull first/last n snapshots
 
 let _nextSnapId = 0; // monotonic ID

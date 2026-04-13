@@ -8,7 +8,7 @@ export async function step() {
     state.setFetchingPop(true);
 
     try {
-        const response = await fetch(`${API_URL}/step`);
+        const response = await fetch(`${API_URL}/step?diff=${state.stepDiff}`);
         const data = await response.json();
         state.setHeatmapData(data.heatmap);
     } catch (error) {

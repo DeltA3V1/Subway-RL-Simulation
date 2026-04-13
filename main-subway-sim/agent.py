@@ -5,19 +5,28 @@ import heapq
 
 GRID_SIZE = 30
 COVERAGE_RADIUS = 3
-REWARD_CONFIG = {"coverage": 1, "track_cost": -1.5, "connectivity_bonus": 200, "station_cost": -25}
-MAX_EDGE_LENGTH = 100
+REWARD_CONFIG = {
+    "coverage": 1, 
+    "track_cost": -1.5, 
+    "connectivity_bonus": 500, 
+    "station_cost": -25, 
+    "tortuosity": -5,
+    "hub_bonus": 40
+}
 
-MAX_LINE_LENGTH = 15
+MAX_EDGE_LENGTH = 15
+MAX_LINE_LENGTH = 10
 MAX_LINES = 9
 AGENTS = 30
 
-MUTATION_RATE = 0.1
+MUTATION_RATE = 0.2
 GROWTH_RATE = 0.1
 DECAY_RATE = 0.05
 ELITE_THRESHOLD = 0.85
-TRACK_COST_SCALING = 1.4
+TRACK_COST_SCALING = 1.2
 COVERAGE_REWARD_SCALING = 1.2
+
+DEVIATION_TOLERANCE = 1.2 # 50%
 
 line_dna = [
     [1, 3, 5, 7],
@@ -37,20 +46,13 @@ class Agent:
 
     def get_random_action(self, line, num_candidates):
         match random.randint(1, 7):
-            case 1:
-                return self.extend_line(line, num_candidates)
-            case 2:
-                return self.remove_station(line)
-            case 3:
-                return self.split_line(line)
-            case 4:
-                return self.replace_station(line, num_candidates)
-            case 5:
-                return self.swap_stations(line)
-            case 6:
-                return self.reverse_segment(line)
-            case 7:
-                return self.move_station(line)
+            case 1: return self.extend_line(line, num_candidates)
+            case 2: return self.remove_station(line)
+            case 3: return self.split_line(line)
+            case 4: return self.replace_station(line, num_candidates)
+            case 5: return self.swap_stations(line)
+            case 6: return self.reverse_segment(line)
+            case 7: return self.move_station(line)
         
     def get_random_line(self, num_candidates=30):
         line_length = random.randint(3, MAX_LINE_LENGTH)
@@ -202,7 +204,7 @@ class Agent:
         return Agent(dna=new_dna, num_candidates=num_candidates)
     
     
-    def score(self, network, world):
+    def score(self, network, world, candidates):
         score = 0.0
         covered_cells = set()
 
@@ -222,6 +224,7 @@ class Agent:
             for r in range(max(0, center_row - COVERAGE_RADIUS), min(GRID_SIZE, center_row + COVERAGE_RADIUS + 1)):
                 for c in range(max(0, center_col - COVERAGE_RADIUS), min(GRID_SIZE, center_col + COVERAGE_RADIUS + 1)):
                     if (r, c) in covered_cells:
+                        score -= REWARD_CONFIG["coverage"] # temporary slight penalty for close stations
                         continue
 
                     if (r - center_row)**2 + (c - center_col)**2 <= radius_sq:
@@ -229,6 +232,17 @@ class Agent:
                         covered_cells.add((r, c))
 
         parent = {i: i for i in range(len(network["nodes"]))}
+
+        # hub bonus
+        station_line_counts = {}
+        for line in self.dna:
+            for node_idx in set(line):
+                station_line_counts[node_idx] = station_line_counts.get(node_idx, 0) + 1
+                
+        for count in station_line_counts.values():
+            if count > 1:
+                # Offset the station cost if it's shared
+                score += REWARD_CONFIG["hub_bonus"] * (count - 1)
 
         def find(i):
             if parent[i] == i:
@@ -259,6 +273,29 @@ class Agent:
         except ZeroDivisionError:
             pass
 
+        for line in self.dna:
+            if len(line) < 3:
+                continue
+                
+            actual_dist = 0.0
+            for i in range(len(line) - 1):
+                p1 = candidates[line[i]]
+                p2 = candidates[line[i+1]]
+                actual_dist += math.dist((p1['row'], p1['col']), (p2['row'], p2['col']))
+                
+            start_node = candidates[line[0]]
+            end_node = candidates[line[-1]]
+            displacement = math.dist((start_node['row'], start_node['col']), (end_node['row'], end_node['col']))
+            
+            if displacement > 0:
+                tortuosity = actual_dist / displacement
+                if tortuosity > DEVIATION_TOLERANCE:
+                    score += REWARD_CONFIG["tortuosity"] * (tortuosity - DEVIATION_TOLERANCE)
+            else:
+                # Loop line logic
+                if actual_dist < 15: 
+                    score += REWARD_CONFIG["tortuosity"] # Penalize useless tight loops
+
         return score
 
 
@@ -279,7 +316,7 @@ class EvolutionLoop:
 
         for idx, agent in enumerate(self.population):
             network = agent.build_network(candidates)
-            score = agent.score(network, world)
+            score = agent.score(network, world, candidates)
             scored_agents.append((score, idx, agent))
 
         scored_agents.sort(key=lambda x: x[0], reverse=True)

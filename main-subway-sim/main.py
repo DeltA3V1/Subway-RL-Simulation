@@ -38,8 +38,8 @@ async def test():
     return {"network": network}
 
 @app.get("/step")
-async def step():
-    world.expand_heatmap(5)
+async def step(diff: int = 5):
+    world.expand_heatmap(diff)
     return {"heatmap": world.heatmap}
 
 @app.get("/step_generation")

@@ -41,7 +41,9 @@ export const LINE_COLORS = [
 
 export const DEFAULT_SPEEDS = {
     popSlow: 250,
-    popFast: 50,
+    popFast: 150,
     agentSlow: 1000,
-    agentFast: 500
+    agentFast: 500,
+    stepDiffSlow: 5,
+    stepDiffFast: 25
 };

@@ -24,8 +24,8 @@
             --tl-selected: #4F46E5;
             --tl-gen: #94a3b8;
             --tl-score: #e2e8f0;
-            --tl-thumb: 88px;
-            --tl-card-w: 96px;
+            --tl-thumb: 100%;
+            --tl-card-w: 100%;
         }
 
         body {
@@ -126,8 +126,11 @@
             display: grid;
             /* 6 equal columns */
             grid-template-columns: repeat(6, 1fr); 
-            gap: 12px;
+            gap: 16px;
             padding: 16px;
+
+            justify-content: center;
+            align-items: start;
         }
 
         .snap-card {
@@ -185,9 +188,10 @@
         }
         .snap-card canvas {
             display: block;
-            width: var(--tl-card-w);
-            height: var(--tl-thumb);
-            /* scale the 88x88 canvas to the card width */
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
             image-rendering: pixelated;
         }
 

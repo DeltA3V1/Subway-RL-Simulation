@@ -25,9 +25,11 @@ export function toggleState() {
 export function toggleSpeed() {
     const newPopSpeed = state.popSpeed === DEFAULT_SPEEDS.popSlow ? DEFAULT_SPEEDS.popFast : DEFAULT_SPEEDS.popSlow;
     const newAgentSpeed = state.agentSpeed === DEFAULT_SPEEDS.agentSlow ? DEFAULT_SPEEDS.agentFast : DEFAULT_SPEEDS.agentSlow;
+    const newStepDiff = state.stepDiff === DEFAULT_SPEEDS.stepDiffSlow ? DEFAULT_SPEEDS.stepDiffFast : DEFAULT_SPEEDS.stepDiffSlow;
     
     state.setPopSpeed(newPopSpeed);
     state.setAgentSpeed(newAgentSpeed);
+    state.setStepDiff(newStepDiff);
     
     if (newPopSpeed === DEFAULT_SPEEDS.popFast) {
         document.getElementById('toggle-speed').innerText = "Speed: Fast";

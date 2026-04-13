@@ -19,6 +19,7 @@ export let runPop = true;
 // Speed settings
 export let popSpeed = 250;
 export let agentSpeed = 1000;
+export let stepDiff = 5;
 
 // Layer visibility
 export let terrainLayer = true;
@@ -50,6 +51,7 @@ export function setRunAgent(value) { runAgent = value; }
 export function setRunPop(value) { runPop = value; }
 export function setPopSpeed(value) { popSpeed = value; }
 export function setAgentSpeed(value) { agentSpeed = value; }
+export function setStepDiff(value) { stepDiff = value; }
 export function setTerrainLayer(value) { terrainLayer = value; }
 export function setHeatmapLayer(value) { heatmapLayer = value; }
 export function setNetworkLayer(value) { networkLayer = value; }
