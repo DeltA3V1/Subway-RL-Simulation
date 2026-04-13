@@ -8,10 +8,10 @@ COVERAGE_RADIUS = 3
 REWARD_CONFIG = {
     "coverage": 1, 
     "track_cost": -1.5, 
-    "connectivity_bonus": 500, 
+    "connectivity_bonus": 200, 
     "station_cost": -25, 
-    "tortuosity": -5,
-    "hub_bonus": 40
+    "tortuosity": -12,
+    "hub_bonus": 10
 }
 
 MAX_EDGE_LENGTH = 15
@@ -26,7 +26,7 @@ ELITE_THRESHOLD = 0.85
 TRACK_COST_SCALING = 1.2
 COVERAGE_REWARD_SCALING = 1.2
 
-DEVIATION_TOLERANCE = 1.2 # 50%
+DEVIATION_TOLERANCE = 1.15 # 15%
 
 line_dna = [
     [1, 3, 5, 7],
@@ -213,7 +213,10 @@ class Agent:
             node_u = network["nodes"][u]
             node_v = network["nodes"][v]
             dist = math.dist((node_u["row"], node_u["col"]), (node_v["row"], node_v["col"]))
-            score += (dist ** TRACK_COST_SCALING) * REWARD_CONFIG["track_cost"]
+            if dist > MAX_EDGE_LENGTH:
+                score += (dist ** TRACK_COST_SCALING) * REWARD_CONFIG["track_cost"] * 3
+            else:
+                score += (dist ** TRACK_COST_SCALING) * REWARD_CONFIG["track_cost"]
 
         radius_sq = COVERAGE_RADIUS**2
         for i, node in enumerate(network["nodes"]):
@@ -224,7 +227,7 @@ class Agent:
             for r in range(max(0, center_row - COVERAGE_RADIUS), min(GRID_SIZE, center_row + COVERAGE_RADIUS + 1)):
                 for c in range(max(0, center_col - COVERAGE_RADIUS), min(GRID_SIZE, center_col + COVERAGE_RADIUS + 1)):
                     if (r, c) in covered_cells:
-                        score -= REWARD_CONFIG["coverage"] # temporary slight penalty for close stations
+                        score -= world.heatmap[r][c] * REWARD_CONFIG["coverage"] # Penalty for close stations
                         continue
 
                     if (r - center_row)**2 + (c - center_col)**2 <= radius_sq:
@@ -233,7 +236,7 @@ class Agent:
 
         parent = {i: i for i in range(len(network["nodes"]))}
 
-        # hub bonus
+        # hub bonus (2+)
         station_line_counts = {}
         for line in self.dna:
             for node_idx in set(line):
@@ -241,8 +244,7 @@ class Agent:
                 
         for count in station_line_counts.values():
             if count > 1:
-                # Offset the station cost if it's shared
-                score += REWARD_CONFIG["hub_bonus"] * (count - 1)
+                score += REWARD_CONFIG["hub_bonus"]
 
         def find(i):
             if parent[i] == i:
