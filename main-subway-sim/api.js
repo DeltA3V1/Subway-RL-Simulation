@@ -54,8 +54,8 @@ export async function resetSimulation() {
         clearInterval(state.evolutionInterval);
         clearInterval(state.popInterval);
         document.getElementById('toggle-active').innerText = "Start Simulation";
+        document.getElementById('stat-generation').innerText = "0";
 
-        // --- NEW: clear timeline on reset ---
         clearSnapshots();
 
         await fetch(`${API_URL}/reset`, { method: 'POST' });

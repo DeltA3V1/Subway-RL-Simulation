@@ -10,11 +10,11 @@ REWARD_CONFIG = {
     "track_cost": -1.5, 
     "connectivity_bonus": 200, 
     "station_cost": -25, 
-    "tortuosity": -12,
+    "tortuosity": -40,
     "hub_bonus": 10
 }
 
-MAX_EDGE_LENGTH = 15
+MAX_EDGE_LENGTH = 12
 MAX_LINE_LENGTH = 10
 MAX_LINES = 9
 AGENTS = 30
@@ -25,8 +25,9 @@ DECAY_RATE = 0.05
 ELITE_THRESHOLD = 0.85
 TRACK_COST_SCALING = 1.2
 COVERAGE_REWARD_SCALING = 1.2
+TORTUOSITY_SCALING = 1.8
 
-DEVIATION_TOLERANCE = 1.15 # 15%
+DEVIATION_TOLERANCE = 1.1 # 10%
 
 line_dna = [
     [1, 3, 5, 7],
@@ -227,7 +228,7 @@ class Agent:
             for r in range(max(0, center_row - COVERAGE_RADIUS), min(GRID_SIZE, center_row + COVERAGE_RADIUS + 1)):
                 for c in range(max(0, center_col - COVERAGE_RADIUS), min(GRID_SIZE, center_col + COVERAGE_RADIUS + 1)):
                     if (r, c) in covered_cells:
-                        score -= world.heatmap[r][c] * REWARD_CONFIG["coverage"] # Penalty for close stations
+                        score -= world.heatmap[r][c] * REWARD_CONFIG["coverage"] * 0.5 # Penalty for close stations
                         continue
 
                     if (r - center_row)**2 + (c - center_col)**2 <= radius_sq:
@@ -292,7 +293,8 @@ class Agent:
             if displacement > 0:
                 tortuosity = actual_dist / displacement
                 if tortuosity > DEVIATION_TOLERANCE:
-                    score += REWARD_CONFIG["tortuosity"] * (tortuosity - DEVIATION_TOLERANCE)
+                    excess = tortuosity - DEVIATION_TOLERANCE
+                    score += REWARD_CONFIG["tortuosity"] * (excess ** TORTUOSITY_SCALING)
             else:
                 # Loop line logic
                 if actual_dist < 15: 
